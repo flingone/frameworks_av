@@ -104,6 +104,7 @@ private:
 
     bool mAudioEOS;
     bool mVideoEOS;
+    bool mDecoderEOS;
 
     bool mScanSourcesPending;
     int32_t mScanSourcesGeneration;
