@@ -1539,6 +1539,13 @@ status_t AwesomePlayer::seekTo_l(int64_t timeUs) {
             modifyFlags(SEEK_PREVIEW, SET);
             postVideoEvent_l();
         }
+    } else {
+        if (mDecryptHandle != NULL) {
+            mDrmManagerClient->setPlaybackStatus(mDecryptHandle,
+                    Playback::PAUSE, 0);
+            mDrmManagerClient->setPlaybackStatus(mDecryptHandle,
+                    Playback::START, mSeekTimeUs / 1000);
+        }
     }
 
     return OK;
@@ -1550,13 +1557,6 @@ void AwesomePlayer::seekAudioIfNecessary_l() {
 
         mWatchForAudioSeekComplete = true;
         mWatchForAudioEOS = true;
-
-        if (mDecryptHandle != NULL) {
-            mDrmManagerClient->setPlaybackStatus(mDecryptHandle,
-                    Playback::PAUSE, 0);
-            mDrmManagerClient->setPlaybackStatus(mDecryptHandle,
-                    Playback::START, mSeekTimeUs / 1000);
-        }
     }
 }
 
