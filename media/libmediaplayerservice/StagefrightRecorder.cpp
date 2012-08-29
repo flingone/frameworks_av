@@ -67,6 +67,7 @@
 #include <system/audio.h>
 
 #include "ARTPWriter.h"
+#include <cutils/properties.h>
 
 namespace android {
 
@@ -1629,6 +1630,7 @@ status_t StagefrightRecorder::setupVideoEncoder(
 
     uint32_t encoder_flags = 0;
     if (mIsMetaDataStoredInVideoBuffers) {
+        ALOGW("Camera source supports metadata mode, create OMXCodec for metadata");
         encoder_flags |= OMXCodec::kStoreMetaDataInVideoBuffers;
     }
 
