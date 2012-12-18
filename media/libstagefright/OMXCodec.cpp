@@ -682,6 +682,10 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
             if (err != OK) {
                 return err;
             }
+
+#ifdef QCOM_HARDWARE
+            QCOMXCodec::setQCSpecificVideoFormat(meta,mOMX,mNode,mComponentName );
+#endif
         }
     }
 
