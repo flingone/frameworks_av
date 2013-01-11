@@ -96,7 +96,8 @@ status_t AudioTrack::getMinFrameCount(
 // ---------------------------------------------------------------------------
 
 AudioTrack::AudioTrack()
-    : mStatus(NO_INIT),
+    : mCblk(NULL),
+      mStatus(NO_INIT),
       mIsTimed(false),
       mPreviousPriority(ANDROID_PRIORITY_NORMAL),
       mPreviousSchedulingGroup(SP_DEFAULT)
@@ -118,7 +119,8 @@ AudioTrack::AudioTrack(
         void* user,
         int notificationFrames,
         int sessionId)
-    : mStatus(NO_INIT),
+    : mCblk(NULL),
+      mStatus(NO_INIT),
       mIsTimed(false),
       mPreviousPriority(ANDROID_PRIORITY_NORMAL),
       mPreviousSchedulingGroup(SP_DEFAULT)
@@ -144,7 +146,8 @@ AudioTrack::AudioTrack(
         void* user,
         int notificationFrames,
         int sessionId)
-    : mStatus(NO_INIT),
+    : mCblk(NULL),
+      mStatus(NO_INIT),
       mIsTimed(false),
       mPreviousPriority(ANDROID_PRIORITY_NORMAL), mPreviousSchedulingGroup(SP_DEFAULT)
 #ifdef QCOM_HARDWARE
@@ -169,7 +172,8 @@ AudioTrack::AudioTrack(
         void* user,
         int notificationFrames,
         int sessionId)
-    : mStatus(NO_INIT),
+  :   mCblk(NULL),
+      mStatus(NO_INIT),
       mIsTimed(false),
       mPreviousPriority(ANDROID_PRIORITY_NORMAL),
       mPreviousSchedulingGroup(SP_DEFAULT)
