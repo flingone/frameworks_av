@@ -52,6 +52,9 @@ public:
     void setFloat(const char *key, float value);
     const char *get(const char *key) const;
     int getInt(const char *key) const;
+#ifdef SAMSUNG_CAMERA_HARDWARE
+    int getInt64(const char *key) const;
+#endif
     float getFloat(const char *key) const;
 
     void remove(const char *key);
@@ -535,6 +538,7 @@ public:
     static const char KEY_METERING[];
     static const char KEY_WDR[];
     static const char KEY_WEATHER[];
+    static const char KEY_CITYID[];
 #endif
 
     // Value for KEY_ZOOM_SUPPORTED or KEY_SMOOTH_ZOOM_SUPPORTED.
