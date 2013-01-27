@@ -101,6 +101,7 @@ const char CameraParameters::KEY_ANTI_SHAKE_MODE[] = "anti-shake";
 const char CameraParameters::KEY_METERING[] = "metering";
 const char CameraParameters::KEY_WDR[] = "wdr";
 const char CameraParameters::KEY_WEATHER[] = "weather";
+const char CameraParameters::KEY_CITYID[] = "contextualtag-cityid";
 #endif
 
 const char CameraParameters::TRUE[] = "true";
@@ -178,6 +179,12 @@ const char CameraParameters::FOCUS_MODE_FIXED[] = "fixed";
 const char CameraParameters::FOCUS_MODE_EDOF[] = "edof";
 const char CameraParameters::FOCUS_MODE_CONTINUOUS_VIDEO[] = "continuous-video";
 const char CameraParameters::FOCUS_MODE_CONTINUOUS_PICTURE[] = "continuous-picture";
+
+const char CameraParameters::KEY_POWER_MODE[] = "power-mode";
+const char CameraParameters::KEY_POWER_MODE_SUPPORTED[] = "power-mode-supported";
+
+const char CameraParameters::LOW_POWER[] = "Low_Power";
+const char CameraParameters::NORMAL_POWER[] = "Normal_Power";
 
 CameraParameters::CameraParameters()
                 : mMap()
@@ -286,6 +293,13 @@ int CameraParameters::getInt(const char *key) const
         return -1;
     return strtol(v, 0, 0);
 }
+
+#ifdef SAMSUNG_CAMERA_HARDWARE
+int CameraParameters::getInt64(const char *key) const
+{
+    return -1;
+}
+#endif
 
 float CameraParameters::getFloat(const char *key) const
 {
