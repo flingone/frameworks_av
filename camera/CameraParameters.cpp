@@ -496,12 +496,6 @@ void CameraParameters::setOrientation(int orientation)
 #endif
 
 
-const char CameraParameters::KEY_POWER_MODE[] = "power-mode";
-const char CameraParameters::KEY_POWER_MODE_SUPPORTED[] = "power-mode-supported";
-
-const char CameraParameters::LOW_POWER[] = "Low_Power";
-const char CameraParameters::NORMAL_POWER[] = "Normal_Power";
-
 CameraParameters::CameraParameters()
                 : mMap()
 {
