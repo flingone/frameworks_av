@@ -404,7 +404,7 @@ int Visualizer_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
         }
         memcpy(pReplyData, pCmdData, sizeof(effect_param_t) + sizeof(uint32_t));
         effect_param_t *p = (effect_param_t *)pReplyData;
-	union {
+        union {
             char *data;
             uint32_t *data32;
         };
@@ -440,7 +440,7 @@ int Visualizer_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
         }
         *(int32_t *)pReplyData = 0;
         effect_param_t *p = (effect_param_t *)pCmdData;
-	union {
+        union {
             char *data;
             uint32_t *data32;
         };
