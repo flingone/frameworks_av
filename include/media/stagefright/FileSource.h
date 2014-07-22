@@ -41,6 +41,10 @@ public:
     virtual sp<DecryptHandle> DrmInitialization(const char *mime);
 
     virtual void getDrmInfo(sp<DecryptHandle> &handle, DrmManagerClient **client);
+    /*Begin : DTS2011120903153 added by g00166974 20110603. */
+    /*for get whether drm media is consumed in preview mode or not . */
+    virtual void setDrmPreviewMode() {mIsDrmPreview = true;};
+    /*End : DTS2011120903153 added by g00166974 20110603. */
 
 protected:
     virtual ~FileSource();
@@ -58,6 +62,16 @@ private:
     int64_t mDrmBufSize;
     unsigned char *mDrmBuf;
 
+    /*Begin : DTS2011120903153 added by g00166974 20110603. */
+    /*Begin: DTS2011120903153 deleted by h00184579 20120325 for FD*/
+    //const char * mFileName;
+    /*End: DTS2011120903153 deleted by h00184579 20120325 for FD*/
+    bool mIsDrmPreview;
+    const char * mFileName;
+    /*Begin: DTS2011120903153 added by g00166974 for retrieving path from fd 20110701. */
+    char mPathBuffer[1024];
+    /*End: DTS2011120903153 added by g00166974 20110701. */
+    /*End : DTS2011120903153 added by g00166974 20110603. */
     ssize_t readAtDRM(off64_t offset, void *data, size_t size);
 
     FileSource(const FileSource &);

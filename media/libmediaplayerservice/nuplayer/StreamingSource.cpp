@@ -35,6 +35,7 @@ namespace android {
 NuPlayer::StreamingSource::StreamingSource(const sp<IStreamSource> &source)
     : mSource(source),
       mFinalResult(OK) {
+	  sys_time_base = streaming_audio_start_timeUs = streaming_sys_start_timeUs = StreamingSource_Sign = 0;
 }
 
 NuPlayer::StreamingSource::~StreamingSource() {
@@ -46,24 +47,28 @@ void NuPlayer::StreamingSource::start() {
     uint32_t sourceFlags = mSource->flags();
 
     uint32_t parserFlags = ATSParser::TS_TIMESTAMPS_ARE_ABSOLUTE;
-    if (sourceFlags & IStreamSource::kFlagAlignedVideoData) {
+    if ((sourceFlags & 0x0000ffff) & IStreamSource::kFlagAlignedVideoData) {
         parserFlags |= ATSParser::ALIGNED_VIDEO_DATA;
     }
-
+	if((sourceFlags>> 16 )== 0x1234)
+		StreamingSource_Sign = 1;
+	ALOGD("NuPlayer::StreamingSource::start sourceFlags %x",sourceFlags);
     mTSParser = new ATSParser(parserFlags);
 
     mStreamListener->start();
 }
 
 status_t NuPlayer::StreamingSource::feedMoreTSData() {
+	ssize_t n;
     if (mFinalResult != OK) {
         return mFinalResult;
     }
 
-    for (int32_t i = 0; i < 50; ++i) {
+	do
+    {
         char buffer[188];
         sp<AMessage> extra;
-        ssize_t n = mStreamListener->read(buffer, sizeof(buffer), &extra);
+        n = mStreamListener->read(buffer, sizeof(buffer), &extra);
 
         if (n == 0) {
             ALOGI("input data EOS reached.");
@@ -74,6 +79,9 @@ status_t NuPlayer::StreamingSource::feedMoreTSData() {
             int32_t type = ATSParser::DISCONTINUITY_SEEK;
 
             int32_t mask;
+			int64_t sys_time = 0ll;
+			int64_t timeUs = 0ll;
+			int	temp;
             if (extra != NULL
                     && extra->findInt32(
                         IStreamListener::kKeyDiscontinuityMask, &mask)) {
@@ -84,9 +92,25 @@ status_t NuPlayer::StreamingSource::feedMoreTSData() {
 
                 type = mask;
             }
-
+			extra->findInt64(
+                        "timeUs", &timeUs);
+			if(!extra->findInt64(
+                        "wifidisplay_sys_timeUs", &sys_time)  )
+			{
             mTSParser->signalDiscontinuity(
                     (ATSParser::DiscontinuityType)type, extra);
+			}
+			if(extra->findInt32(
+                        "first_packet", &temp)  )
+			{
+				mTSParser->set_player_type(3);// jmj for wfd
+				ALOGD("first_packet set ATsparser type 3");
+			}
+			if(StreamingSource_Sign == 1)
+			{
+				streaming_sys_start_timeUs 		= sys_time;
+				streaming_audio_start_timeUs	= 	timeUs ;
+			}
         } else if (n < 0) {
             CHECK_EQ(n, -EWOULDBLOCK);
             break;
@@ -124,7 +148,7 @@ status_t NuPlayer::StreamingSource::feedMoreTSData() {
                 }
             }
         }
-    }
+    }while(n>0);
 
     return OK;
 }
@@ -135,7 +159,6 @@ sp<MetaData> NuPlayer::StreamingSource::getFormatMeta(bool audio) {
 
     sp<AnotherPacketSource> source =
         static_cast<AnotherPacketSource *>(mTSParser->getSource(type).get());
-
     if (source == NULL) {
         return NULL;
     }
@@ -172,9 +195,26 @@ status_t NuPlayer::StreamingSource::dequeueAccessUnit(
 
     return err;
 }
-
 uint32_t NuPlayer::StreamingSource::flags() const {
-    return 0;
+     return 0;
+}
+int	NuPlayer::StreamingSource::getwifidisplay_info(int *info)
+{
+	return (StreamingSource_Sign != 0);
+};
+int	NuPlayer::StreamingSource::Wifidisplay_get_TimeInfo(int64_t *start_time,int64_t *audio_start_time)
+{
+
+	if(1 == StreamingSource_Sign)
+	{
+		if(streaming_sys_start_timeUs !=0 && streaming_audio_start_timeUs !=0 )
+		{
+			*start_time 		=	streaming_sys_start_timeUs;
+			*audio_start_time	=	streaming_audio_start_timeUs;
+		}
+	}
+	ALOGV("StreamingSource_Sign %d start_time %lld %lld",StreamingSource_Sign,*start_time,*audio_start_time );
+	return (1 == StreamingSource_Sign) ? 0 : -1;
 }
 
 }  // namespace android

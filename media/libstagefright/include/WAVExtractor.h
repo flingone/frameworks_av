@@ -20,13 +20,21 @@
 
 #include <utils/Errors.h>
 #include <media/stagefright/MediaExtractor.h>
+#include <media/stagefright/Utils.h>
+#define SUPPORT_ADPCM 1
+#if SUPPORT_ADPCM
+#define MSADPCM_MAX_PCM_LENGTH          2048
+#define IMAADPCM_MAX_PCM_LENGTH         4096
+#endif//SUPPORT_ADPCM
 
 namespace android {
 
 struct AMessage;
 class DataSource;
 class String8;
-
+#if SUPPORT_ADPCM
+class WAVSource;
+#endif
 class WAVExtractor : public MediaExtractor {
 public:
     // Extractor assumes ownership of "source".
@@ -53,7 +61,16 @@ private:
     off64_t mDataOffset;
     size_t mDataSize;
     sp<MetaData> mTrackMeta;
-
+#if SUPPORT_ADPCM
+	uint32_t mByteRate;
+    uint16_t mBlockAlign;
+    uint16_t mBytesPerSample;
+	uint16_t mSamplesPerBlock;
+	uint32_t mNumSamples;
+	uint32_t mWBitsPerSample;
+	bool isLittleEndian;
+	friend class WAVSource;
+#endif//SUPPORT_ADPCM
     status_t init();
 
     WAVExtractor(const WAVExtractor &);

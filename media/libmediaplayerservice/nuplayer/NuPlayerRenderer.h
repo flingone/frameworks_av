@@ -32,6 +32,10 @@ struct NuPlayer::Renderer : public AHandler {
             bool audio,
             const sp<ABuffer> &buffer,
             const sp<AMessage> &notifyConsumed);
+	void rendervideobuffer(
+			bool audio,
+			const sp<ABuffer> &buffer,
+			const sp<AMessage> &notifyConsumed) ;
 
     void queueEOS(bool audio, status_t finalResult);
 
@@ -43,7 +47,8 @@ struct NuPlayer::Renderer : public AHandler {
 
     void pause();
     void resume();
-
+	void set_wifidisplay_flag(int flag){wifidisplay_flag = flag;};
+	int Wifidisplay_set_TimeInfo(int64_t start_time,int64_t audio_start_time);
     enum {
         kWhatEOS                 = 'eos ',
         kWhatFlushComplete       = 'fluC',
@@ -104,7 +109,12 @@ private:
 
     int64_t mLastPositionUpdateUs;
     int64_t mVideoLateByUs;
-
+	int64_t	audio_latency_time;
+	int		wifidisplay_flag;
+	int64_t sys_start_time ;
+	int64_t audio_start_timeUs;
+	int64_t last_adujst_time;
+	int64_t last_timeUs;    
     bool onDrainAudioQueue();
     void postDrainAudioQueue(int64_t delayUs = 0);
 

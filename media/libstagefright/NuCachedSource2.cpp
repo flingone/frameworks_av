@@ -186,10 +186,12 @@ NuCachedSource2::NuCachedSource2(
       mLooper(new ALooper),
       mCache(new PageCache(kPageSize)),
       mCacheOffset(0),
+      seek_en(false),
       mFinalStatus(OK),
       mLastAccessPos(0),
       mFetching(true),
       mLastFetchTimeUs(-1),
+	  update_pos(0),
       mNumRetriesLeft(kMaxNumRetries),
       mHighwaterThresholdBytes(kDefaultHighWaterThreshold),
       mLowwaterThresholdBytes(kDefaultLowWaterThreshold),
@@ -271,6 +273,11 @@ void NuCachedSource2::onMessageReceived(const sp<AMessage> &msg) {
             break;
         }
 
+		case kWaitRead:
+		{
+			waitRead(msg);
+			break;
+		}
         default:
             TRESPASS();
     }
@@ -371,8 +378,17 @@ void NuCachedSource2::onFetch() {
         mLastFetchTimeUs = ALooper::GetNowUs();
 
         if (mFetching && mCache->totalSize() >= mHighwaterThresholdBytes) {
-            ALOGI("Cache full, done prefetching for now");
-            mFetching = false;
+			if (update_pos > mCacheOffset+kPageSize)
+			{
+				Mutex::Autolock autoLock(mLock);
+				size_t actualBytes = mCache->releaseFromStart(kPageSize);
+				mCacheOffset += actualBytes;
+			}
+			else
+			{
+//	            LOGI("Cache full, done prefetching for now");
+	            mFetching = false;
+			}
 
             if (mDisconnectAtHighwatermark
                     && (mSource->flags() & DataSource::kIsHTTPBasedSource)) {
@@ -381,6 +397,11 @@ void NuCachedSource2::onFetch() {
                 mFinalStatus = -EAGAIN;
             }
         }
+    } else if(update_pos > mCacheOffset+kPageSize)	{
+			Mutex::Autolock autoLock(mLock);
+		size_t actualBytes = mCache->releaseFromStart(kPageSize);
+		mCacheOffset += actualBytes;
+		mFetching = true;
     } else {
         Mutex::Autolock autoLock(mLock);
         restartPrefetcherIfNecessary_l();
@@ -430,6 +451,26 @@ void NuCachedSource2::onRead(const sp<AMessage> &msg) {
     mCondition.signal();
 }
 
+void NuCachedSource2::waitRead(const sp<AMessage> &msg) {
+    ALOGV("onRead");
+
+    int64_t offset;
+    CHECK(msg->findInt64("offset", &offset));
+
+	if ((offset > mCacheOffset+mCache->totalSize())&&(mFinalStatus == OK))
+	{
+		mFetching = true;
+		msg->post(50000);
+        return;
+	}
+
+    Mutex::Autolock autoLock(mLock);
+
+    CHECK(mAsyncResult == NULL);
+
+    mAsyncResult = new AMessage;
+    mCondition.signal();
+}
 void NuCachedSource2::restartPrefetcherIfNecessary_l(
         bool ignoreLowWaterThreshold, bool force) {
     static const size_t kGrayArea = 1024 * 1024;
@@ -479,7 +520,22 @@ ssize_t NuCachedSource2::readAt(off64_t offset, void *data, size_t size) {
 
         return size;
     }
+	if (offset > mCacheOffset + mCache->totalSize())
+	{
+		if (((!seek_en)&&(offset - mCacheOffset - mCache->totalSize() < kDefaultHighWaterThreshold/4))||(offset - mCacheOffset - mCache->totalSize() < kDefaultLowWaterThreshold))
+		{
+		    sp<AMessage> msg = new AMessage(kWaitRead, mReflector->id());
+		    msg->setInt64("offset", offset);
 
+		    CHECK(mAsyncResult == NULL);
+		    msg->post();
+
+		    while (mAsyncResult == NULL) {
+		        mCondition.wait(mLock);
+		    }
+			mAsyncResult.clear();
+		}
+	}
     sp<AMessage> msg = new AMessage(kWhatRead, mReflector->id());
     msg->setInt64("offset", offset);
     msg->setPointer("data", data);
@@ -504,6 +560,17 @@ ssize_t NuCachedSource2::readAt(off64_t offset, void *data, size_t size) {
     return (ssize_t)result;
 }
 
+void NuCachedSource2::updatecache(off64_t offset)
+{
+	/*if (updatecache > offset)
+	{
+		if(offset > kLowWaterThreshold)
+			offset -= kLowWaterThreshold;
+		else
+			offset = 0;
+	}*/
+	update_pos = offset;
+}
 size_t NuCachedSource2::cachedSize() {
     Mutex::Autolock autoLock(mLock);
     return mCacheOffset + mCache->totalSize();
@@ -620,6 +687,11 @@ void NuCachedSource2::getDrmInfo(sp<DecryptHandle> &handle, DrmManagerClient **c
     mSource->getDrmInfo(handle, client);
 }
 
+void NuCachedSource2::set_palystate(bool seeking)
+{
+	seek_en = seeking;
+}
+
 String8 NuCachedSource2::getUri() {
     return mSource->getUri();
 }
@@ -686,6 +758,7 @@ void NuCachedSource2::RemoveCacheSpecificHeaders(
     *cacheConfig = String8();
     *disconnectAtHighwatermark = false;
 
+    return;  //add by csy for youtube apk
     if (headers == NULL) {
         return;
     }

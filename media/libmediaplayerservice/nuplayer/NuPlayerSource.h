@@ -47,13 +47,22 @@ struct NuPlayer::Source : public RefBase {
     virtual status_t getDuration(int64_t *durationUs) {
         return INVALID_OPERATION;
     }
-
+	virtual int	getwifidisplay_info(int *info){return 0;};
+	
+	virtual int Wifidisplay_get_TimeInfo(int64_t *start_time,int64_t *audio_start_time){return 0;};
     virtual status_t seekTo(int64_t seekTimeUs) {
         return INVALID_OPERATION;
     }
-
+	
+	virtual bool isSeekable() {
+        return false;
+    }
+	
     virtual uint32_t flags() const = 0;
 
+    virtual void reset() {
+        return;
+    }
 protected:
     virtual ~Source() {}
 

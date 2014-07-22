@@ -400,7 +400,10 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
             } else {
                 err = mSource->read(&mInputBuffer, &options);
             }
-
+	    if(err == INFO_TIME_OUT)
+	    {
+		break;
+	    }
             CHECK((err == OK && mInputBuffer != NULL)
                    || (err != OK && mInputBuffer == NULL));
 
@@ -456,7 +459,8 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
 
             CHECK(mInputBuffer->meta_data()->findInt64(
                         kKeyTime, &mPositionTimeMediaUs));
-
+			if(mSampleRate == 0)
+				ALOGD("mSampleRate is zero !!!error");
             mPositionTimeRealUs =
                 ((mNumFramesPlayed + size_done / mFrameSize) * 1000000)
                     / mSampleRate;

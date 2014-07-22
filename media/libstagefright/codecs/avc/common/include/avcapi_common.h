@@ -213,15 +213,15 @@ typedef void (*FuctionType_FrameUnbind)(void *userData, int);
     memory usage.
 \param "size" "Size of requested memory in bytes."
 \param "attribute" "Some value specifying types, priority, etc. of the memory."
-\return "The address of the allocated, zero-initialized memory"
+\return "The address of the allocated memory casted to int"
 */
-typedef void* (*FunctionType_Malloc)(void *userData, int32 size, int attribute);
+typedef int (*FunctionType_Malloc)(void *userData, int32 size, int attribute);
 
 /** Function pointer to free
-\param "mem" "Pointer to the memory to be freed"
+\param "mem" "Pointer to the memory to be freed casted to int"
 \return "void"
 */
-typedef void (*FunctionType_Free)(void *userData, void *mem);
+typedef void (*FunctionType_Free)(void *userData, int mem);
 
 /** Debug logging information is returned to the application thru this function.
 \param "type"   "Type of logging message, see definition of AVCLogType."

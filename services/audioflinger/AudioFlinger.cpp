@@ -1789,6 +1789,9 @@ sp<AudioFlinger::PlaybackThread::Track> AudioFlinger::PlaybackThread::createTrac
     }
 
     if (mType == DIRECT) {
+        //ALOGE("AudioFlinger: sampleRate %d mSampleRate %d format %d mFormat %d channelMask %d mChannelMask %d",
+          //  sampleRate,mSampleRate,format,mFormat,channelMask,mChannelMask);
+        #if 0
         if ((format & AUDIO_FORMAT_MAIN_MASK) == AUDIO_FORMAT_PCM) {
             if (sampleRate != mSampleRate || format != mFormat || channelMask != mChannelMask) {
                 ALOGE("createTrack_l() Bad parameter: sampleRate %d format %d, channelMask 0x%08x \""
@@ -1798,6 +1801,7 @@ sp<AudioFlinger::PlaybackThread::Track> AudioFlinger::PlaybackThread::createTrac
                 goto Exit;
             }
         }
+        #endif
     } else {
         // Resampler implementation limits input sampling rate to 2 x output sampling rate.
         if (sampleRate > mSampleRate*2) {
@@ -2096,7 +2100,9 @@ void AudioFlinger::PlaybackThread::readOutputParameters()
     }
     mNormalFrameCount = multiplier * mFrameCount;
     // round up to nearest 16 frames to satisfy AudioMixer
-    mNormalFrameCount = (mNormalFrameCount + 15) & ~15;
+    //in direct , we do not round up frames.
+    if(mType != DIRECT)
+        mNormalFrameCount = (mNormalFrameCount + 15) & ~15;
     ALOGI("HAL output buffer size %u frames, normal mix buffer size %u frames", mFrameCount, mNormalFrameCount);
 
     delete[] mMixBuffer;
@@ -3975,7 +3981,8 @@ void AudioFlinger::DirectOutputThread::cacheParameters_l()
 
     // use shorter standby delay as on normal output to release
     // hardware resources as soon as possible
-    standbyDelay = microseconds(activeSleepTime*2);
+    ALOGD("DirectOutput: using mStandbyTimeInNsecs\n");
+    //standbyDelay = microseconds(activeSleepTime*2);
 }
 
 // ----------------------------------------------------------------------------

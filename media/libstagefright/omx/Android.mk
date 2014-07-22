@@ -13,6 +13,13 @@ LOCAL_C_INCLUDES += \
         $(TOP)/frameworks/av/media/libstagefright \
         $(TOP)/frameworks/native/include/media/hardware \
         $(TOP)/frameworks/native/include/media/openmax
+ifeq ($(strip $(TARGET_BOARD_HARDWARE)),rk29board)
+LOCAL_C_INCLUDES += hardware/rk29/libgralloc
+else
+LOCAL_C_INCLUDES += hardware/rk29/libgralloc_ump
+endif
+LOCAL_STATIC_LIBRARIES := \
+        libstagefright_version 
 
 LOCAL_SHARED_LIBRARIES :=               \
         libbinder                       \

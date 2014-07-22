@@ -34,9 +34,11 @@ struct NuPlayer::StreamingSource : public NuPlayer::Source {
     virtual status_t feedMoreTSData();
 
     virtual status_t dequeueAccessUnit(bool audio, sp<ABuffer> *accessUnit);
+	 virtual uint32_t flags() const;
 
-    virtual uint32_t flags() const;
+	virtual int	getwifidisplay_info(int *info);
 
+    int Wifidisplay_get_TimeInfo(int64_t *start_time,int64_t *audio_start_time);
 protected:
     virtual ~StreamingSource();
 
@@ -47,7 +49,10 @@ private:
     status_t mFinalResult;
     sp<NuPlayerStreamListener> mStreamListener;
     sp<ATSParser> mTSParser;
-
+	int	StreamingSource_Sign;
+	int64_t	sys_time_base;
+	int64_t streaming_sys_start_timeUs;
+	int64_t	streaming_audio_start_timeUs;
     DISALLOW_EVIL_CONSTRUCTORS(StreamingSource);
 };
 

@@ -24,7 +24,7 @@
 namespace android {
 
 struct HDCP : public BnHDCP {
-    HDCP();
+    HDCP(HDCPModule::HDCP_ROLE hdcp);
     virtual ~HDCP();
 
     virtual status_t setObserver(const sp<IHDCPObserver> &observer);
@@ -34,6 +34,8 @@ struct HDCP : public BnHDCP {
     virtual status_t encrypt(
             const void *inData, size_t size, uint32_t streamCTR,
             uint64_t *outInputCTR, void *outData);
+	virtual status_t decrypt(
+        	const uint8_t *HDCP_private_data, size_t HDCP_private_data_len, const void *inData, size_t dataLen, void *outData);
 
 private:
     Mutex mLock;

@@ -18,8 +18,27 @@
 #define LOG_TAG "OMXCodec"
 #include <utils/Log.h>
 
+#include "include/AACDecoder.h"
+#include "include/AACDecoder_MIRRORING.h"
+#include "include/AC3Decoder.h"
+#include "include/RADecoder.h"
+#include "include/DTSDecoder.h"
+#include "include/WMADecoder.h"
+#include "include/WMAPRODecoder.h"
+#include "include/FLACDecoder.h"
 #include "include/AACEncoder.h"
 
+#include "include/WAVDecoder.h"
+#include "include/AVCDecoder.h"
+#include "include/AVCDecoder_FLASH.h"
+#include "include/AVCEncoder.h"
+#include "include/M4vH263Decoder.h"
+#include "include/MP3Decoder.h"
+#include "include/VPXDecoder.h"
+#include "include/RVDecoder.h"
+#include "include/M2VDecoder.h"
+#include "include/FLVDecoder.h"
+#include "include/VC1Decoder.h"
 #include "include/ESDS.h"
 
 #include <binder/IServiceManager.h>
@@ -38,6 +57,9 @@
 #include <media/stagefright/Utils.h>
 #include <media/stagefright/SkipCutBuffer.h>
 #include <utils/Vector.h>
+#include <cutils/properties.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 #include <OMX_Audio.h>
 #include <OMX_Component.h>
@@ -57,6 +79,15 @@ const static int64_t kBufferFilledEventTimeOutNs = 3000000000LL;
 // component in question is buggy or not.
 const static uint32_t kMaxColorFormatSupported = 1000;
 
+struct CodecInfo {
+    const char *mime;
+    const char *codec;
+};
+
+#define FACTORY_CREATE(name) \
+static sp<MediaSource> Make##name(const sp<MediaSource> &source) { \
+    return new name(source); \
+}
 #define FACTORY_CREATE_ENCODER(name) \
 static sp<MediaSource> Make##name(const sp<MediaSource> &source, const sp<MetaData> &meta) { \
     return new name(source, meta); \
@@ -64,7 +95,26 @@ static sp<MediaSource> Make##name(const sp<MediaSource> &source, const sp<MetaDa
 
 #define FACTORY_REF(name) { #name, Make##name },
 
+FACTORY_CREATE(MP3Decoder)
+FACTORY_CREATE(AACDecoder)
+FACTORY_CREATE(AACDecoder_MIRRORING)
+FACTORY_CREATE(DTSDecoder)
+FACTORY_CREATE(WMADecoder)
+FACTORY_CREATE(FLACDecoder)
+FACTORY_CREATE(WMAPRODecoder)
+FACTORY_CREATE(AC3Decoder)
+FACTORY_CREATE(RADecoder)
+FACTORY_CREATE(WAVDecoder)
+FACTORY_CREATE(AVCDecoder)
+FACTORY_CREATE(AVCDecoder_FLASH)
+FACTORY_CREATE(RVDecoder)
+FACTORY_CREATE(FLVDecoder)
+FACTORY_CREATE(M2VDecoder)
+FACTORY_CREATE(VC1Decoder)
+FACTORY_CREATE(M4vH263Decoder)
+FACTORY_CREATE(VPXDecoder)
 FACTORY_CREATE_ENCODER(AACEncoder)
+FACTORY_CREATE_ENCODER(AVCEncoder)
 
 static sp<MediaSource> InstantiateSoftwareEncoder(
         const char *name, const sp<MediaSource> &source,
@@ -76,6 +126,7 @@ static sp<MediaSource> InstantiateSoftwareEncoder(
 
     static const FactoryInfo kFactoryInfo[] = {
         FACTORY_REF(AACEncoder)
+        FACTORY_REF(AVCEncoder)
     };
     for (size_t i = 0;
          i < sizeof(kFactoryInfo) / sizeof(kFactoryInfo[0]); ++i) {
@@ -87,6 +138,69 @@ static sp<MediaSource> InstantiateSoftwareEncoder(
     return NULL;
 }
 
+static sp<MediaSource> InstantiateSoftwareCodec(
+        const char *name, const sp<MediaSource> &source) {
+    struct FactoryInfo {
+        const char *name;
+        sp<MediaSource> (*CreateFunc)(const sp<MediaSource> &);
+    };
+    static const FactoryInfo kFactoryInfo[] = {
+        FACTORY_REF(MP3Decoder)
+        FACTORY_REF(AACDecoder)
+        FACTORY_REF(AACDecoder_MIRRORING)
+        FACTORY_REF(DTSDecoder)
+        FACTORY_REF(WMADecoder)
+        FACTORY_REF(FLACDecoder)
+		FACTORY_REF(WMAPRODecoder)
+        FACTORY_REF(AC3Decoder)
+        FACTORY_REF(RADecoder)
+        FACTORY_REF(WAVDecoder)
+        FACTORY_REF(AVCDecoder)
+        FACTORY_REF(AVCDecoder_FLASH)
+        FACTORY_REF(RVDecoder)
+        FACTORY_REF(FLVDecoder)
+        FACTORY_REF(M2VDecoder)
+        FACTORY_REF(VC1Decoder)
+        FACTORY_REF(M4vH263Decoder)
+        FACTORY_REF(VPXDecoder)
+    };
+    for (size_t i = 0;
+         i < sizeof(kFactoryInfo) / sizeof(kFactoryInfo[0]); ++i) {
+        if (!strcmp(name, kFactoryInfo[i].name)) {
+            char value[PROPERTY_VALUE_MAX];
+            char substring[PROPERTY_VALUE_MAX];
+            if(property_get("media.decoder.cfg", value, NULL))
+            {
+                char *subname;
+                subname = strstr(name,"Decoder");
+                if(subname)
+                {
+                int offset = subname - name;
+                memcpy(substring,name,offset);
+                substring[offset] = '\0';
+
+				if(!strcmp(substring,"WMAPRO"))
+				{
+					return (*kFactoryInfo[i].CreateFunc)(source);
+				}
+
+                if (strstr(value,substring)){
+            		return (*kFactoryInfo[i].CreateFunc)(source);
+                    }
+                }
+                else
+                {
+                    ALOGE("InstantiateSoftwareCodec, Decoder return NULL");
+                }
+            }
+            else
+            {
+                return (*kFactoryInfo[i].CreateFunc)(source);
+            }
+        }
+    }
+    return NULL;
+}
 #undef FACTORY_CREATE_ENCODER
 #undef FACTORY_REF
 
@@ -179,6 +293,7 @@ static int CompareSoftwareCodecsFirst(
 }
 
 // static
+#define SUPPORT_FLASH103_FLAG 0x12340000//
 void OMXCodec::findMatchingCodecs(
         const char *mime,
         bool createEncoder, const char *matchComponentName,
@@ -190,42 +305,62 @@ void OMXCodec::findMatchingCodecs(
     if (list == NULL) {
         return;
     }
+	if((flags == SUPPORT_FLASH103_FLAG)&&!strcmp(mime,"video/avc")&& !createEncoder)
+	{
+		//ALOGE("------->flags %d mime %s componentname %s ",flags,mime,matchComponentName);
+		ssize_t index = matchingCodecs->add();
+		CodecNameAndQuirks *entry = &matchingCodecs->editItemAt(index);
+		entry->mName = String8("AVCDecoder_FLASH");
+		entry->mQuirks = SUPPORT_FLASH103_FLAG;
+	}
+	else if((flags == SUPPORT_FLASH103_FLAG)&&!strcmp(mime,"audio/aac")&& !createEncoder)
+	{
+		//ALOGE("------->flags %d mime %s componentname %s ",flags,mime,matchComponentName);
+		ssize_t index = matchingCodecs->add();
+		CodecNameAndQuirks *entry = &matchingCodecs->editItemAt(index);
+		entry->mName = String8("AACDecoder");
+		entry->mQuirks = SUPPORT_FLASH103_FLAG;
+	}
+	else
+	{
+	    size_t index = 0;
+	    for (;;) {
+	        ssize_t matchIndex =
+	            list->findCodecByType(mime, createEncoder, index);
 
-    size_t index = 0;
-    for (;;) {
-        ssize_t matchIndex =
-            list->findCodecByType(mime, createEncoder, index);
+	        if (matchIndex < 0) {
+	            break;
+	        }
 
-        if (matchIndex < 0) {
-            break;
+	        index = matchIndex + 1;
+
+	        const char *componentName = list->getCodecName(matchIndex);
+
+			if(!strcmp(componentName, "AVCDecoder_FLASH"))
+				continue;
+	        // If a specific codec is requested, skip the non-matching ones.
+	        if (matchComponentName && strcmp(componentName, matchComponentName)) {
+	            continue;
+	        }
+
+	        // When requesting software-only codecs, only push software codecs
+	        // When requesting hardware-only codecs, only push hardware codecs
+	        // When there is request neither for software-only nor for
+	        // hardware-only codecs, push all codecs
+	        if (((flags & kSoftwareCodecsOnly) &&   IsSoftwareCodec(componentName)) ||
+	            ((flags & kHardwareCodecsOnly) &&  !IsSoftwareCodec(componentName)) ||
+	            (!(flags & (kSoftwareCodecsOnly | kHardwareCodecsOnly)))) {
+
+	            ssize_t index = matchingCodecs->add();
+	            CodecNameAndQuirks *entry = &matchingCodecs->editItemAt(index);
+	            entry->mName = String8(componentName);
+	            entry->mQuirks = getComponentQuirks(list, matchIndex);
+
+	            ALOGV("matching '%s' quirks 0x%08x",
+	                  entry->mName.string(), entry->mQuirks);
+	        }
         }
-
-        index = matchIndex + 1;
-
-        const char *componentName = list->getCodecName(matchIndex);
-
-        // If a specific codec is requested, skip the non-matching ones.
-        if (matchComponentName && strcmp(componentName, matchComponentName)) {
-            continue;
-        }
-
-        // When requesting software-only codecs, only push software codecs
-        // When requesting hardware-only codecs, only push hardware codecs
-        // When there is request neither for software-only nor for
-        // hardware-only codecs, push all codecs
-        if (((flags & kSoftwareCodecsOnly) &&   IsSoftwareCodec(componentName)) ||
-            ((flags & kHardwareCodecsOnly) &&  !IsSoftwareCodec(componentName)) ||
-            (!(flags & (kSoftwareCodecsOnly | kHardwareCodecsOnly)))) {
-
-            ssize_t index = matchingCodecs->add();
-            CodecNameAndQuirks *entry = &matchingCodecs->editItemAt(index);
-            entry->mName = String8(componentName);
-            entry->mQuirks = getComponentQuirks(list, matchIndex);
-
-            ALOGV("matching '%s' quirks 0x%08x",
-                  entry->mName.string(), entry->mQuirks);
-        }
-    }
+	}
 
     if (flags & kPreferSoftwareCodecs) {
         matchingCodecs->sort(CompareSoftwareCodecsFirst);
@@ -280,12 +415,14 @@ sp<MediaSource> OMXCodec::Create(
         uint32_t flags,
         const sp<ANativeWindow> &nativeWindow) {
     int32_t requiresSecureBuffers;
+    if (source != NULL) {
     if (source->getFormat()->findInt32(
                 kKeyRequiresSecureBuffers,
                 &requiresSecureBuffers)
             && requiresSecureBuffers) {
         flags |= kIgnoreCodecSpecificData;
         flags |= kUseSecureInputBuffers;
+        }
     }
 
     const char *mime;
@@ -319,15 +456,14 @@ sp<MediaSource> OMXCodec::Create(
             componentName = tmp.c_str();
         }
 
-        if (createEncoder) {
-            sp<MediaSource> softwareCodec =
-                InstantiateSoftwareEncoder(componentName, source, meta);
+        sp<MediaSource> softwareCodec = createEncoder?
+            InstantiateSoftwareEncoder(componentName, source, meta):
+            InstantiateSoftwareCodec(componentName, source);
 
             if (softwareCodec != NULL) {
                 ALOGV("Successfully allocated software codec '%s'", componentName);
 
                 return softwareCodec;
-            }
         }
 
         ALOGV("Attempting to allocate OMX node '%s'", componentName);
@@ -1709,15 +1845,36 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
         return err;
     }
 
+    android_native_rect_t crop;
+    crop.left = 0;
+    crop.top = 0;
+    crop.right = def.format.video.nFrameWidth & (~3); //if no 4 aglin crop csy
+    crop.bottom = def.format.video.nFrameHeight;
+    int rga_fd = -1;
+    rga_fd  = open("/dev/rga",O_RDWR,0);
+    if (rga_fd > 0) {
     err = native_window_set_buffers_geometry(
             mNativeWindow.get(),
-            def.format.video.nFrameWidth,
-            def.format.video.nFrameHeight,
+        (def.format.video.nFrameWidth + 31)&(~31),
+        (def.format.video.nFrameHeight + 15)&(~15),
             def.format.video.eColorFormat);
+        close(rga_fd);
+    }else{
+        err = native_window_set_buffers_geometry(
+        mNativeWindow.get(),
+        (def.format.video.nFrameWidth + 15)&(~15),
+        (def.format.video.nFrameHeight + 15)&(~15),
+        def.format.video.eColorFormat);
+    }
 
     if (err != 0) {
         ALOGE("native_window_set_buffers_geometry failed: %s (%d)",
                 strerror(-err), -err);
+        return err;
+    }
+    err = native_window_set_crop(mNativeWindow.get(), &crop);
+    if (err != 0) {
+        ALOGE("native_window_set_cropfailed: %s (%d)",strerror(-err), -err);
         return err;
     }
 
@@ -1843,7 +2000,7 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
         cancelEnd = mPortBuffers[kPortIndexOutput].size();
     } else {
         // Return the last two buffers to the native window.
-        cancelStart = def.nBufferCountActual - minUndequeuedBufs;
+        cancelStart = def.nBufferCountActual;
         cancelEnd = def.nBufferCountActual;
     }
 
@@ -2452,6 +2609,7 @@ void OMXCodec::onEvent(OMX_EVENTTYPE event, OMX_U32 data1, OMX_U32 data2) {
             if (data1 == kPortIndexOutput) {
                 mNoMoreOutputData = true;
             }
+            mBufferFilled.signal();
             break;
         }
 #endif
@@ -4041,6 +4199,7 @@ static const char *videoCompressionFormatString(OMX_VIDEO_CODINGTYPE type) {
         "OMX_VIDEO_CodingRV",
         "OMX_VIDEO_CodingAVC",
         "OMX_VIDEO_CodingMJPEG",
+        "OMX_VIDEO_CodingVPX",
     };
 
     size_t numNames = sizeof(kNames) / sizeof(kNames[0]);
@@ -4511,11 +4670,14 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
 }
 
 status_t OMXCodec::pause() {
+    return ERROR_UNSUPPORTED;
+#if 0
     Mutex::Autolock autoLock(mLock);
 
     mPaused = true;
 
     return OK;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

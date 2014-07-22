@@ -43,6 +43,7 @@ NuPlayer::HTTPLiveSource::HTTPLiveSource(
       mFlags(0),
       mFinalResult(OK),
       mOffset(0) {
+      mLiveSession = NULL;
     if (headers) {
         mExtraHeaders = *headers;
 
@@ -121,23 +122,22 @@ status_t NuPlayer::HTTPLiveSource::feedMoreTSData() {
         } else {
             if (buffer[0] == 0x00) {
                 // XXX legacy
-
-                uint8_t type = buffer[1];
-
-                sp<AMessage> extra = new AMessage;
-
-                if (type & 2) {
-                    int64_t mediaTimeUs;
-                    memcpy(&mediaTimeUs, &buffer[2], sizeof(mediaTimeUs));
-
-                    extra->setInt64(IStreamListener::kKeyMediaTimeUs, mediaTimeUs);
-                }
-
+                sp<AMessage> extra;
+                int64_t mCurrentTime = 0;
+                extra= new AMessage();
+                mLiveSession->getCurrentTime(&mCurrentTime);
+                extra->setInt64("start-at-mediatimeUs", mCurrentTime);
+                if(buffer[1] == 2){
                 mTSParser->signalDiscontinuity(
-                        ((type & 1) == 0)
+                        ATSParser::DISCONTINUITY_PLUSTIME,
+                        extra);
+                }else{
+                    mTSParser->signalDiscontinuity(
+                        buffer[1] == 0x00
                             ? ATSParser::DISCONTINUITY_SEEK
                             : ATSParser::DISCONTINUITY_FORMATCHANGE,
                         extra);
+                }
             } else {
                 status_t err = mTSParser->feedTSPacket(buffer, sizeof(buffer));
 
@@ -192,6 +192,10 @@ status_t NuPlayer::HTTPLiveSource::seekTo(int64_t seekTimeUs) {
     return OK;
 }
 
+bool NuPlayer::HTTPLiveSource::isSeekable() {
+    return mLiveSession->isSeekable();
+}
+
 uint32_t NuPlayer::HTTPLiveSource::flags() const {
     uint32_t flags = 0;
     if (mLiveSession->isSeekable()) {
@@ -205,5 +209,15 @@ uint32_t NuPlayer::HTTPLiveSource::flags() const {
     return flags;
 }
 
+void NuPlayer::HTTPLiveSource::reset() {
+    if(mLiveSession == NULL){
+        return;
+    }
+    sp<LiveDataSource> source =
+            static_cast<LiveDataSource *>(mLiveSession->getDataSource().get());
+    if (mLiveSession !=NULL) {
+        mLiveSession->disconnect();
+    }
+}
 }  // namespace android
 

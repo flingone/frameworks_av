@@ -2,6 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
+        MP3Decoder.cpp \
 	src/pvmp3_normalize.cpp \
  	src/pvmp3_alias_reduction.cpp \
  	src/pvmp3_crc.cpp \
@@ -27,6 +28,17 @@ LOCAL_SRC_FILES := \
  	src/pvmp3_seek_synch.cpp \
  	src/pvmp3_stereo_proc.cpp \
  	src/pvmp3_reorder.cpp \
+ 	src/pvmp3_polyphase_filter_window.cpp \
+ 	src/pvmp3_mdct_18.cpp \
+ 	src/pvmp3_dct_9.cpp \
+ 	src/pvmp3_dct_16.cpp\
+ 	src/bit.cpp\
+ 	src/frame.cpp\
+ 	src/synth.cpp\
+ 	src/stream.cpp\
+ 	src/output.cpp\
+ 	src/fixed.cpp\
+ 	src/layer12.cpp
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_SRC_FILES += \

@@ -239,6 +239,25 @@ void SfDelegate::setUID(uid_t uid) {
     gReqContext->setUID(uid);
 }
 
+std::string SfDelegate::getRealUrl(){
+
+	if(mURLRequest != NULL){
+
+		 GURL gUrl = mURLRequest->url();
+		// ALOGI("--->SfDelegate::getRealUrl()");
+		 if(!gUrl.is_empty())
+		 {
+			//const char * url 
+			//std::string url = std::string(gUrl.spec().c_str());
+			//ALOGI("-->not empty spec %s",url.c_str());
+			//return url.c_str();
+			return gUrl.spec();
+		 }
+		 	
+	}
+	return std::string("");
+}
+
 bool SfDelegate::getUID(uid_t *uid) const {
     return gReqContext->getUID(uid);
 }

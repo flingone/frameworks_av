@@ -39,7 +39,7 @@ struct NuCachedSource2 : public DataSource {
 
     virtual status_t getSize(off64_t *size);
     virtual uint32_t flags();
-
+	virtual void updatecache(off64_t offset);
     virtual sp<DecryptHandle> DrmInitialization(const char* mime);
     virtual void getDrmInfo(sp<DecryptHandle> &handle, DrmManagerClient **client);
     virtual String8 getUri();
@@ -63,6 +63,7 @@ struct NuCachedSource2 : public DataSource {
             KeyedVector<String8, String8> *headers,
             String8 *cacheConfig,
             bool *disconnectAtHighwatermark);
+	void set_palystate(bool seeking);			
 
 protected:
     virtual ~NuCachedSource2();
@@ -83,6 +84,7 @@ private:
     enum {
         kWhatFetchMore  = 'fetc',
         kWhatRead       = 'read',
+		kWaitRead		= 'wait'
     };
 
     enum {
@@ -101,10 +103,11 @@ private:
     off64_t mCacheOffset;
     status_t mFinalStatus;
     off64_t mLastAccessPos;
+	off64_t update_pos;
     sp<AMessage> mAsyncResult;
     bool mFetching;
     int64_t mLastFetchTimeUs;
-
+	bool	seek_en;
     int32_t mNumRetriesLeft;
 
     size_t mHighwaterThresholdBytes;
@@ -118,6 +121,7 @@ private:
     void onMessageReceived(const sp<AMessage> &msg);
     void onFetch();
     void onRead(const sp<AMessage> &msg);
+	void waitRead(const sp<AMessage> &msg);
 
     void fetchInternal();
     ssize_t readInternal(off64_t offset, void *data, size_t size);

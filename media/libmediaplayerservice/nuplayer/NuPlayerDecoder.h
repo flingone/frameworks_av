@@ -35,6 +35,10 @@ struct NuPlayer::Decoder : public AHandler {
     void signalFlush();
     void signalResume();
     void initiateShutdown();
+    int32_t checkinit();
+    void setinit(){
+        mInitFlag = true;
+    }
 
 protected:
     virtual ~Decoder();
@@ -58,6 +62,7 @@ private:
     sp<AMessage> makeFormat(const sp<MetaData> &meta);
 
     void onFillThisBuffer(const sp<AMessage> &msg);
+    bool mInitFlag;
 
     DISALLOW_EVIL_CONSTRUCTORS(Decoder);
 };

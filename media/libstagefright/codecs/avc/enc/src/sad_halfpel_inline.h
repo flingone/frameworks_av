@@ -24,9 +24,7 @@ extern "C"
 {
 #endif
 
-/* Intentionally not using the gcc asm version, since it is
- * slightly slower than the plain C version on modern GCC versions. */
-#if !defined(__CC_ARM) /* Generic C version */
+#if defined(__GNUC__) && defined(__arm__) /* ARM GNU COMPILER  */
 
     __inline int32 INTERP1_SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
     {
@@ -76,26 +74,14 @@ extern "C"
 
     __inline int32 INTERP1_SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
     {
-        __asm__ volatile(
-            "rsbs       %1, %1, %2, asr #1\n\t"
-            "rsbmi      %1, %1, #0\n\t"
-            "add        %0, %0, %1"
-            : "+r"(sad), "+r"(tmp)
-            : "r"(tmp2)
-        );
+__asm__ volatile("rsbs	%1, %1, %2, asr #1\n\trsbmi %1, %1, #0\n\tadd  %0, %0, %1": "=r"(sad), "=r"(tmp): "r"(tmp2));
 
         return sad;
     }
 
     __inline int32 INTERP2_SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
     {
-        __asm__ volatile(
-            "rsbs       %1, %2, %1, asr #2\n\t"
-            "rsbmi      %1, %1, #0\n\t"
-            "add        %0, %0, %1"
-            : "+r"(sad), "+r"(tmp)
-            : "r"(tmp2)
-        );
+__asm__ volatile("rsbs	%1, %2, %1, asr #2\n\trsbmi %1, %1, #0\n\tadd	%0, %0, %1": "=r"(sad), "=r"(tmp): "r"(tmp2));
 
         return sad;
     }

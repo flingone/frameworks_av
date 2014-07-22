@@ -183,6 +183,9 @@ struct MyHandler : public AHandler {
         msg->post();
     }
 
+    bool isSeekable(){
+        return mSeekable;
+    }
     static void addRR(const sp<ABuffer> &buf) {
         uint8_t *ptr = buf->data() + buf->size();
         ptr[0] = 0x80 | 0;
@@ -474,6 +477,10 @@ struct MyHandler : public AHandler {
                                 result = ERROR_UNSUPPORTED;
                             } else {
                                 setupTrack(1);
+                            }
+                            int64_t durationUs = 0;
+                            if(mSessionDesc->getDurationUs(&durationUs)&& durationUs > 0){
+                                mSeekable = true;
                             }
                         }
                     }
@@ -1090,7 +1097,6 @@ struct MyHandler : public AHandler {
     }
 
     void parsePlayResponse(const sp<ARTSPResponse> &response) {
-        mSeekable = false;
 
         ssize_t i = response->mHeaders.indexOfKey("range");
         if (i < 0) {
@@ -1162,7 +1168,6 @@ struct MyHandler : public AHandler {
             ++n;
         }
 
-        mSeekable = true;
     }
 
     sp<MetaData> getTrackFormat(size_t index, int32_t *timeScale) {

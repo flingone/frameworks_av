@@ -38,11 +38,17 @@ struct MediaSource;
 struct NuCachedSource2;
 struct ISurfaceTexture;
 
+struct ALooper;
 class DrmManagerClinet;
 class DecryptHandle;
 
 class TimedTextDriver;
 struct WVMExtractor;
+struct TvpadSource;
+struct FrameQueueManage;
+struct FrameQueue;
+struct RtpSource;
+struct WimoSource;
 
 struct AwesomeRenderer : public RefBase {
     AwesomeRenderer() {}
@@ -100,6 +106,8 @@ struct AwesomePlayer {
 
     void postAudioEOS(int64_t delayUs = 0ll);
     void postAudioSeekComplete();
+	int64_t onDisplayEvent();
+	FrameQueueManage	*pfrmanager;
 
     status_t dump(int fd, const Vector<String16> &args) const;
 
@@ -170,6 +178,7 @@ private:
     bool mVideoRendererIsPreview;
 
     ssize_t mActiveAudioTrackIndex;
+	String8 filePath;
     sp<MediaSource> mAudioTrack;
     sp<MediaSource> mAudioSource;
     AudioPlayer *mAudioPlayer;
@@ -198,6 +207,7 @@ private:
 
     int64_t mBitrate;  // total bitrate of the file (in bps) or -1 if unknown.
 
+	int64_t started_realtime;
     bool mWatchForAudioSeekComplete;
     bool mWatchForAudioEOS;
 
@@ -245,6 +255,7 @@ private:
 
     status_t setDataSource_l(const sp<DataSource> &dataSource);
     status_t setDataSource_l(const sp<MediaExtractor> &extractor);
+    String8 mMime;
     void reset_l();
     status_t seekTo_l(int64_t timeUs);
     status_t pause_l(bool at_eos = false);
@@ -258,7 +269,7 @@ private:
     status_t initAudioDecoder();
 
     void setVideoSource(sp<MediaSource> source);
-    status_t initVideoDecoder(uint32_t flags = 0);
+    status_t initVideoDecoder(uint32_t flags = 1);
 
     void addTextSource_l(size_t trackIndex, const sp<MediaSource>& source);
 
@@ -338,7 +349,16 @@ private:
     status_t selectTrack(size_t trackIndex, bool select);
 
     size_t countTracks() const;
-
+    int64_t preMediaTimeus;
+    int64_t mPreSeekTimeUs;
+    int64_t mPreSeekSysTimeUs;
+	sp<RtpSource> mRtpSource;
+	sp<WimoSource> mWimoSource;
+	int32_t wimo_flag;
+	bool isTvpad;
+	bool wireless_player_flag;
+    sp<TvpadSource> mTvpadSource;
+    uint32_t Resver[38];
     AwesomePlayer(const AwesomePlayer &);
     AwesomePlayer &operator=(const AwesomePlayer &);
 };

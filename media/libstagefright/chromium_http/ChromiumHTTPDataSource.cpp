@@ -65,7 +65,6 @@ status_t ChromiumHTTPDataSource::connect(
     if (getUID(&uid)) {
         mDelegate->setUID(uid);
     }
-
 #if defined(LOG_NDEBUG) && !LOG_NDEBUG
     LOG_PRI(ANDROID_LOG_VERBOSE, LOG_TAG, "connect on behalf of uid %d", uid);
 #endif
@@ -107,6 +106,19 @@ status_t ChromiumHTTPDataSource::connect_l(
 
     return mState == CONNECTED ? OK : mIOResult;
 }
+
+
+String8 ChromiumHTTPDataSource::getRealUrl(){
+
+	if(mDelegate)
+	{
+		//ALOGE("-->ChromiumHTTPDataSource::getRealUrl() %s",mDelegate->getRealUrl().c_str());
+		return String8(mDelegate->getRealUrl().c_str());
+	}
+	
+	return String8("");
+}
+
 
 void ChromiumHTTPDataSource::onConnectionEstablished(
         int64_t contentSize, const char *contentType) {

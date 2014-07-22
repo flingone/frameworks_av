@@ -68,12 +68,31 @@
 #include "TestPlayerStub.h"
 #include "StagefrightPlayer.h"
 #include "nuplayer/NuPlayerDriver.h"
+#include <dlfcn.h>  // for dlopen/dlclose
 
 #include <OMX.h>
 
 #include "Crypto.h"
 #include "HDCP.h"
 #include "RemoteDisplay.h"
+#define MEDIA_SUPPORT_PLAY_WITH_STREAM_CTRL 0
+
+static void* gFFplayerLibHandle = NULL;
+
+/*
+ ** must sync with: rkmediaconfig.h (frameworks\av\media\librkmediaconfig\include)
+*/
+typedef enum {
+    QUERY_CODEC_SUPPORT         = 0x0001,
+    QUERY_HAVE_VC1_STREAM       = 0x0002,
+}RK_CODEC_QUERY_KEY;
+
+typedef enum {
+    RK_CODEC_VIDEO_SUPPORT      = 0x0001,
+    RK_CODEC_AUDIO_SUPPORT      = 0x0002,
+    RK_CODEC_HAVE_VC1_STREAM    = 0x0004,
+    RK_CODEC_HAVE_VIDEO_STREAM  = 0x0008,
+}RK_CODEC_CFG_RESULT_MAP;
 
 namespace {
 using android::media::Metadata;
@@ -82,6 +101,64 @@ using android::OK;
 using android::BAD_VALUE;
 using android::NOT_ENOUGH_DATA;
 using android::Parcel;
+static int sniffByFFPlayerWrapper(const char* url, int fd, const android::sp<android::MediaPlayerBase>& p)
+{
+    int retSniff = 0;
+
+    if (gFFplayerLibHandle ==NULL) {
+        gFFplayerLibHandle = dlopen("librkmediaconfig.so", RTLD_NOW);
+    }
+    if (gFFplayerLibHandle == NULL) {
+        /*
+         ** if we do not find the library, return -1 also means not snifffed,
+         ** supported it as default. 
+        */
+        //ALOGI("open librkmediaconfig.so fail");
+        return -1;
+    }
+    typedef int (*SniffFFplayerFunc)(const char* url, int fd, int key);
+    SniffFFplayerFunc sniff =
+        (SniffFFplayerFunc)dlsym(
+                gFFplayerLibHandle, "queryCodecOnRkPlatform");
+    if (sniff == NULL) {
+        ALOGI("dlsym sniffMediaFile function fail");
+        return 0;
+    } else {
+        retSniff = sniff(url, fd, QUERY_CODEC_SUPPORT);
+        ALOGI("after ffplayer sniff, retSniff: 0x%X", retSniff);
+#if MEDIA_SUPPORT_PLAY_WITH_STREAM_CTRL
+        if (p) {
+            Parcel* parcel = new Parcel();
+            if (retSniff) {
+                if (!(retSniff & RK_CODEC_VIDEO_SUPPORT)) {
+                    ALOGI("video codec is not support, so set prop here");
+                    p->setParameter(2100, *parcel);
+                }
+
+                if (!(retSniff & RK_CODEC_AUDIO_SUPPORT)) {
+                    p->setParameter(2101, *parcel);
+                }
+            }
+
+            if (parcel) {
+                delete(parcel);
+                parcel = NULL;
+            }
+        }
+#else
+        if (retSniff) {
+            if ((retSniff & RK_CODEC_HAVE_VIDEO_STREAM) &&
+               !(retSniff & RK_CODEC_VIDEO_SUPPORT)) {
+                ALOGI("sniffByFFPlayerWrapper fail, 2nd unsupport");
+                return 0;
+            }
+        }
+#endif
+        return retSniff;
+    }
+
+    return 0;
+}
 
 // Max number of entries in the filter.
 const int kMaxFilterSize = 64;  // I pulled that out of thin air.
@@ -206,6 +283,7 @@ MediaPlayerService::MediaPlayerService()
 {
     ALOGV("MediaPlayerService created");
     mNextConnId = 1;
+    gFFplayerLibHandle = NULL;
 
     mBatteryAudio.refCount = 0;
     for (int i = 0; i < NUM_AUDIO_DEVICES; i++) {
@@ -221,6 +299,10 @@ MediaPlayerService::MediaPlayerService()
 
 MediaPlayerService::~MediaPlayerService()
 {
+    if (gFFplayerLibHandle) {
+        dlclose(gFFplayerLibHandle);
+        gFFplayerLibHandle = NULL;
+    }
     ALOGV("MediaPlayerService destroyed");
 }
 
@@ -283,7 +365,14 @@ sp<ICrypto> MediaPlayerService::makeCrypto() {
 }
 
 sp<IHDCP> MediaPlayerService::makeHDCP() {
-    return new HDCP;
+    return new HDCP(HDCPModule::HDCP_TRANSMITTER);
+}
+
+sp<IHDCP> MediaPlayerService::makeHDCPSink() {
+	if(mHDCPSink==NULL){
+		mHDCPSink = new HDCP(HDCPModule::HDCP_RECEIVER);
+	}
+	return mHDCPSink;
 }
 
 sp<IRemoteDisplay> MediaPlayerService::listenForRemoteDisplay(
@@ -635,8 +724,19 @@ status_t MediaPlayerService::Client::setDataSource(
         close(fd);
         return mStatus;
     } else {
-        player_type playerType = MediaPlayerFactory::getPlayerType(this, url);
+        player_type playerType = MediaPlayerFactory::getPlayerType(this, url,(KeyedVector<String8, String8> *)headers);
         sp<MediaPlayerBase> p = setDataSource_pre(playerType);
+        if ((strncmp(url, "http://", 7) == 0) ||
+            (strncmp(url, "https://", 8) == 0) ||
+            (strncmp(url, "rtsp://", 7) == 0) ||
+            (strncmp(url, "widevine://", 11))) {
+            ;// no support check
+        } else {
+            if (!sniffByFFPlayerWrapper(url, -1, p)) {
+                ALOGI("sniffByFFPlayerWrapper fail, unsupport");
+                return ERROR_UNSUPPORTED;
+	        }
+        }
         if (p == NULL) {
             return NO_INIT;
         }
@@ -677,6 +777,10 @@ status_t MediaPlayerService::Client::setDataSource(int fd, int64_t offset, int64
                                                                offset,
                                                                length);
     sp<MediaPlayerBase> p = setDataSource_pre(playerType);
+    if (!sniffByFFPlayerWrapper(NULL, fd, p)) {
+        ALOGI("sniffByFFPlayerWrapper fail, unsupport");
+        return ERROR_UNSUPPORTED;
+    }
     if (p == NULL) {
         return NO_INIT;
     }
@@ -1398,6 +1502,10 @@ status_t MediaPlayerService::AudioOutput::open(
         return NO_INIT;
     }
 
+    if(AUDIO_OUTPUT_FLAG_DIRECT == flags){
+        ALOGD("AUDIO_OUTPUT_FLAG_DIRECT, afSampleRate need equal to source sampleRate: %d\n", sampleRate);
+        afSampleRate = sampleRate;
+    }
     frameCount = (sampleRate*afFrameCount*bufferCount)/afSampleRate;
 
     if (channelMask == CHANNEL_MASK_USE_CHANNEL_ORDER) {

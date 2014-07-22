@@ -37,7 +37,10 @@
 #include "MidiMetadataRetriever.h"
 #include "MetadataRetrieverClient.h"
 #include "StagefrightMetadataRetriever.h"
+#include "RkMetadataRetriever.h"
 #include "MediaPlayerFactory.h"
+
+
 
 namespace android {
 
@@ -88,6 +91,12 @@ static sp<MediaMetadataRetrieverBase> createRetriever(player_type playerType)
         {
             p = new StagefrightMetadataRetriever;
             break;
+        }
+        case FF_PLAYER:
+        {
+        	ALOGD("start FFPLAYER");
+           p =  new RK_MetadataRetriever;
+           break;
         }
         case SONIVOX_PLAYER:
             ALOGV("create midi metadata retriever");

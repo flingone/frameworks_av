@@ -28,6 +28,23 @@
 #include <utils/threads.h>
 #include <drm/DrmManagerClient.h>
 
+#ifndef STAGEFRIGHT_SNIFF_CONFIDENCE
+#define STAGEFRIGHT_SNIFF_CONFIDENCE
+#define MPEG2TS_CONTAINER_CONFIDENCE        (0.1f)
+#define OGG_CONTAINER_CONFIDENCE            (0.2f)
+#define WAV_CONTAINER_CONFIDENCE            (0.4f)
+#define MP3_CONTAINER_CONFIDENCE            (0.4f)
+#define AMR_CONTAINER_CONFIDENCE            (0.5f)
+#define MPG_CONTAINER_CONFIDENCE            (0.5f)
+#define REALVIDEO_CONTAINER_CONFIDENCE      (0.6f)
+#define FLV_CONTAINER_CONFIDENCE            (0.6f)
+#define AVI_CONTAINER_CONFIDENCE            (0.6f)
+#define MPEG4_CONTAINER_CONFIDENCE          (0.7f)
+#define AAC_CONTAINER_CONFIDENCE            (0.8f)
+#define WMA_CONTAINER_CONFIDENCE            (0.9f)
+#define WMV_CONTAINER_CONFIDENCE            (0.9f)
+#define MATROSKA_CONTAINER_CONFIDENCE       (1.0f)
+#endif
 namespace android {
 
 struct AMessage;
@@ -54,7 +71,11 @@ public:
 
     // Convenience methods:
     bool getUInt16(off64_t offset, uint16_t *x);
-
+	
+    virtual void updatecache(off64_t offset){
+        return;
+    }
+	
     // May return ERROR_UNSUPPORTED.
     virtual status_t getSize(off64_t *size);
 
@@ -91,6 +112,9 @@ public:
     }
 
     virtual String8 getMIMEType() const;
+    /* <DTS2012050301388 wanghao 20120503 begin */
+    virtual void setDrmPreviewMode() {};
+    /* DTS2012050301388 wanghao 20120503 end> */
 
 protected:
     virtual ~DataSource() {}

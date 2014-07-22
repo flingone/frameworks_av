@@ -325,6 +325,8 @@ bool ASessionDescription::parseNTPRange(
 
     *npt2 = strtof(s, &end);
 
+    if(*npt2 < 0.01f)
+        return true;
     if (end == s || *end != '\0') {
         return false;
     }

@@ -77,6 +77,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     }
 
     encvid = (AVCEncObject*) avcHandle->AVCObject;
+    memset(encvid, 0, sizeof(AVCEncObject)); /* reset everything */
 
     encvid->enc_state = AVCEnc_Initializing;
 
@@ -89,6 +90,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     }
 
     video = encvid->common;
+    memset(video, 0, sizeof(AVCCommonObj));
 
     /* allocate bitstream structure */
     encvid->bitstream = (AVCEncBitstream*) avcHandle->CBAVC_Malloc(userData, sizeof(AVCEncBitstream), DEFAULT_ATTR);
@@ -104,6 +106,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(video->currSeqParams, 0, sizeof(AVCSeqParamSet));
 
     /* allocate picture parameter set structure */
     video->currPicParams = (AVCPicParamSet*) avcHandle->CBAVC_Malloc(userData, sizeof(AVCPicParamSet), DEFAULT_ATTR);
@@ -111,6 +114,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(video->currPicParams, 0, sizeof(AVCPicParamSet));
 
     /* allocate slice header structure */
     video->sliceHdr = (AVCSliceHeader*) avcHandle->CBAVC_Malloc(userData, sizeof(AVCSliceHeader), DEFAULT_ATTR);
@@ -118,6 +122,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(video->sliceHdr, 0, sizeof(AVCSliceHeader));
 
     /* allocate encoded picture buffer structure*/
     video->decPicBuf = (AVCDecPicBuffer*) avcHandle->CBAVC_Malloc(userData, sizeof(AVCDecPicBuffer), DEFAULT_ATTR);
@@ -125,6 +130,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(video->decPicBuf, 0, sizeof(AVCDecPicBuffer));
 
     /* allocate rate control structure */
     encvid->rateCtrl = (AVCRateControl*) avcHandle->CBAVC_Malloc(userData, sizeof(AVCRateControl), DEFAULT_ATTR);
@@ -132,6 +138,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(encvid->rateCtrl, 0, sizeof(AVCRateControl));
 
     /* reset frame list, not really needed */
     video->currPic = NULL;
@@ -187,6 +194,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
     {
         return AVCENC_MEMORY_FAIL;
     }
+    memset(encvid->mot16x16, 0, sizeof(AVCMV)*framesize);
 
     encvid->intraSearch = (uint8*) avcHandle->CBAVC_Malloc(userData, sizeof(uint8) * framesize, DEFAULT_ATTR);
     if (encvid->intraSearch == NULL)
@@ -565,7 +573,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO 
     recon->pitch = currFS->frame.pitch;
     recon->disp_order = currFS->PicOrderCnt;
     recon->coding_order = currFS->FrameNum;
-    recon->id = (intptr_t) currFS->base_dpb; /* use the pointer as the id */
+    recon->id = (uint32) currFS->base_dpb; /* use the pointer as the id */
 
     currFS->IsOutputted |= 1;
 
@@ -602,32 +610,32 @@ OSCL_EXPORT_REF void    PVAVCCleanUpEncoder(AVCHandle *avcHandle)
 
         if (encvid->functionPointer != NULL)
         {
-            avcHandle->CBAVC_Free(userData, encvid->functionPointer);
+            avcHandle->CBAVC_Free(userData, (int)encvid->functionPointer);
         }
 
         if (encvid->min_cost)
         {
-            avcHandle->CBAVC_Free(userData, encvid->min_cost);
+            avcHandle->CBAVC_Free(userData, (int)encvid->min_cost);
         }
 
         if (encvid->intraSearch)
         {
-            avcHandle->CBAVC_Free(userData, encvid->intraSearch);
+            avcHandle->CBAVC_Free(userData, (int)encvid->intraSearch);
         }
 
         if (encvid->mot16x16)
         {
-            avcHandle->CBAVC_Free(userData, encvid->mot16x16);
+            avcHandle->CBAVC_Free(userData, (int)encvid->mot16x16);
         }
 
         if (encvid->rateCtrl)
         {
-            avcHandle->CBAVC_Free(userData, encvid->rateCtrl);
+            avcHandle->CBAVC_Free(userData, (int)encvid->rateCtrl);
         }
 
         if (encvid->overrunBuffer)
         {
-            avcHandle->CBAVC_Free(userData, encvid->overrunBuffer);
+            avcHandle->CBAVC_Free(userData, (int)encvid->overrunBuffer);
         }
 
         video = encvid->common;
@@ -635,45 +643,45 @@ OSCL_EXPORT_REF void    PVAVCCleanUpEncoder(AVCHandle *avcHandle)
         {
             if (video->MbToSliceGroupMap)
             {
-                avcHandle->CBAVC_Free(userData, video->MbToSliceGroupMap);
+                avcHandle->CBAVC_Free(userData, (int)video->MbToSliceGroupMap);
             }
             if (video->mblock != NULL)
             {
-                avcHandle->CBAVC_Free(userData, video->mblock);
+                avcHandle->CBAVC_Free(userData, (int)video->mblock);
             }
             if (video->decPicBuf != NULL)
             {
                 CleanUpDPB(avcHandle, video);
-                avcHandle->CBAVC_Free(userData, video->decPicBuf);
+                avcHandle->CBAVC_Free(userData, (int)video->decPicBuf);
             }
             if (video->sliceHdr != NULL)
             {
-                avcHandle->CBAVC_Free(userData, video->sliceHdr);
+                avcHandle->CBAVC_Free(userData, (int)video->sliceHdr);
             }
             if (video->currPicParams != NULL)
             {
                 if (video->currPicParams->slice_group_id)
                 {
-                    avcHandle->CBAVC_Free(userData, video->currPicParams->slice_group_id);
+                    avcHandle->CBAVC_Free(userData, (int)video->currPicParams->slice_group_id);
                 }
 
-                avcHandle->CBAVC_Free(userData, video->currPicParams);
+                avcHandle->CBAVC_Free(userData, (int)video->currPicParams);
             }
             if (video->currSeqParams != NULL)
             {
-                avcHandle->CBAVC_Free(userData, video->currSeqParams);
+                avcHandle->CBAVC_Free(userData, (int)video->currSeqParams);
             }
             if (encvid->bitstream != NULL)
             {
-                avcHandle->CBAVC_Free(userData, encvid->bitstream);
+                avcHandle->CBAVC_Free(userData, (int)encvid->bitstream);
             }
             if (video != NULL)
             {
-                avcHandle->CBAVC_Free(userData, video);
+                avcHandle->CBAVC_Free(userData, (int)video);
             }
         }
 
-        avcHandle->CBAVC_Free(userData, encvid);
+        avcHandle->CBAVC_Free(userData, (int)encvid);
 
         avcHandle->AVCObject = NULL;
     }

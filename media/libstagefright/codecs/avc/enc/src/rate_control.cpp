@@ -190,6 +190,7 @@ AVCEnc_Status InitRateControlModule(AVCHandle *avcHandle)
         {
             goto CLEANUP_RC;
         }
+        memset(rateCtrl->pMP, 0, sizeof(MultiPass));
         rateCtrl->pMP->encoded_frames = -1; /* forget about the very first I frame */
 
         /* RDInfo **pRDSamples */
@@ -206,6 +207,7 @@ AVCEnc_Status InitRateControlModule(AVCHandle *avcHandle)
             {
                 goto CLEANUP_RC;
             }
+            for (j = 0; j < 32; j++)    memset(&(rateCtrl->pMP->pRDSamples[i][j]), 0, sizeof(RDInfo));
         }
         rateCtrl->pMP->frameRange = (int)(rateCtrl->frame_rate * 1.0); /* 1.0s time frame*/
         rateCtrl->pMP->frameRange = AVC_MAX(rateCtrl->pMP->frameRange, 5);
@@ -298,7 +300,7 @@ void CleanupRateControlModule(AVCHandle *avcHandle)
 
     if (rateCtrl->MADofMB)
     {
-        avcHandle->CBAVC_Free(avcHandle->userData, rateCtrl->MADofMB);
+        avcHandle->CBAVC_Free(avcHandle->userData, (int)(rateCtrl->MADofMB));
     }
 
     if (rateCtrl->pMP)
@@ -309,12 +311,12 @@ void CleanupRateControlModule(AVCHandle *avcHandle)
             {
                 if (rateCtrl->pMP->pRDSamples[i])
                 {
-                    avcHandle->CBAVC_Free(avcHandle->userData, rateCtrl->pMP->pRDSamples[i]);
+                    avcHandle->CBAVC_Free(avcHandle->userData, (int)rateCtrl->pMP->pRDSamples[i]);
                 }
             }
-            avcHandle->CBAVC_Free(avcHandle->userData, rateCtrl->pMP->pRDSamples);
+            avcHandle->CBAVC_Free(avcHandle->userData, (int)rateCtrl->pMP->pRDSamples);
         }
-        avcHandle->CBAVC_Free(avcHandle->userData, rateCtrl->pMP);
+        avcHandle->CBAVC_Free(avcHandle->userData, (int)(rateCtrl->pMP));
     }
 
     return ;

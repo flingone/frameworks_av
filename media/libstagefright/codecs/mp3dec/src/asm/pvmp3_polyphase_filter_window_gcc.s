@@ -46,10 +46,8 @@ pvmp3_polyphase_filter_window:
         stmfd    sp!,{r0-r2,r4-r11,lr}
 
         sub      sp,sp,#4
-        adr      r2,PolyPh_filter_coeff
-        ldr      r1,[r2]
-        add      r1,r2
         ldr      r2,[sp,#0xc]
+        ldr      r1,PolyPh_filter_coeff
 		
         sub      r2,r2,#1
         mov      r10,#1
@@ -226,7 +224,7 @@ PolyPh_filter_loop2:
         ldmfd    sp!,{r4-r11,pc}
 
 PolyPh_filter_coeff:
-        .word      pqmfSynthWin-PolyPh_filter_coeff
+        .word      pqmfSynthWin
 LOW_16BITS:
         .word      0x00007fff
 

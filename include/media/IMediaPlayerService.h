@@ -53,6 +53,7 @@ public:
     virtual sp<IOMX>            getOMX() = 0;
     virtual sp<ICrypto>         makeCrypto() = 0;
     virtual sp<IHDCP>           makeHDCP() = 0;
+	virtual sp<IHDCP>           makeHDCPSink() = 0;
 
     // Connects to a remote display.
     // 'iface' specifies the address of the local interface on which to listen for

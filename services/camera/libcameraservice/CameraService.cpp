@@ -111,6 +111,10 @@ CameraService::~CameraService() {
 }
 
 int32_t CameraService::getNumberOfCameras() {
+    if(mNumberOfCameras == 0) {
+       ALOGE("no camera found before! check again...");
+       onFirstRef();
+    }
     return mNumberOfCameras;
 }
 

@@ -26,7 +26,7 @@
 
 namespace android {
 
-HDCP::HDCP()
+HDCP::HDCP(HDCPModule::HDCP_ROLE hdcpRole)
     : mLibHandle(NULL),
       mHDCPModule(NULL) {
     mLibHandle = dlopen("libstagefright_hdcp.so", RTLD_NOW);
@@ -37,7 +37,7 @@ HDCP::HDCP()
     }
 
     typedef HDCPModule *(*CreateHDCPModuleFunc)(
-            void *, HDCPModule::ObserverFunc);
+            void *, HDCPModule::HDCP_ROLE hdcpType, HDCPModule::ObserverFunc);
 
     CreateHDCPModuleFunc createHDCPModule =
         (CreateHDCPModuleFunc)dlsym(mLibHandle, "createHDCPModule");
@@ -45,7 +45,7 @@ HDCP::HDCP()
     if (createHDCPModule == NULL) {
         ALOGE("Unable to find symbol 'createHDCPModule'.");
     } else if ((mHDCPModule = createHDCPModule(
-                    this, &HDCP::ObserveWrapper)) == NULL) {
+                    this, hdcpRole, &HDCP::ObserveWrapper)) == NULL) {
         ALOGE("createHDCPModule failed.");
     }
 }
@@ -110,13 +110,24 @@ status_t HDCP::encrypt(
     return mHDCPModule->encrypt(inData, size, streamCTR, outInputCTR, outData);
 }
 
+status_t HDCP::decrypt(
+       const uint8_t *HDCP_private_data, size_t HDCP_private_data_len, const void *inData, size_t dataLen, void *outData) {
+    Mutex::Autolock autoLock(mLock);
+
+    if (mHDCPModule == NULL) {
+        return NO_INIT;
+    }
+
+    return mHDCPModule->decrypt(HDCP_private_data, HDCP_private_data_len, inData, dataLen, outData);
+}
+
 // static
 void HDCP::ObserveWrapper(void *me, int msg, int ext1, int ext2) {
     static_cast<HDCP *>(me)->observe(msg, ext1, ext2);
 }
 
 void HDCP::observe(int msg, int ext1, int ext2) {
-    Mutex::Autolock autoLock(mLock);
+    //Mutex::Autolock autoLock(mLock);
 
     if (mObserver != NULL) {
         mObserver->notify(msg, ext1, ext2, NULL /* obj */);

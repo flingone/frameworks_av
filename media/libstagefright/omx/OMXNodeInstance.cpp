@@ -27,6 +27,12 @@
 #include <HardwareAPI.h>
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/MediaErrors.h>
+#include "gralloc_priv.h"
+#include <sys/ioctl.h>
+#include <linux/android_pmem.h>
+#include <cutils/properties.h>
+#include "version.h"
+#include <fcntl.h>
 
 namespace android {
 
@@ -436,8 +442,34 @@ status_t OMXNodeInstance::useGraphicBuffer2_l(
     BufferMeta *bufferMeta = new BufferMeta(graphicBuffer);
 
     OMX_BUFFERHEADERTYPE *header = NULL;
-    OMX_U8* bufferHandle = const_cast<OMX_U8*>(
+    OMX_U8* bufferHandle = NULL;
+    RK_CHIP_TYPE mBoardType;
+
+    int rga_fd = -1;
+    rga_fd  = open("/dev/rga",O_RDWR,0);
+    if (rga_fd > 0) {
+        mBoardType = RK30;
+		close(rga_fd);
+    }else{
+        mBoardType = RK29;
+    }
+    if(RK30 == mBoardType)
+    {
+            bufferHandle = const_cast<OMX_U8*>(
             reinterpret_cast<const OMX_U8*>(graphicBuffer->handle));
+    }else if(RK29 == mBoardType){
+    struct pmem_region region;
+	private_handle_t* hnd   = (private_handle_t*)graphicBuffer->handle;
+	int status = ioctl(hnd->fd, PMEM_GET_PHYS, &region);
+	uint32_t physAddr;
+	if(!status) {
+		physAddr = (uint32_t)(region.offset + hnd->offset);
+	}
+            bufferHandle =  const_cast<OMX_U8*>(
+            reinterpret_cast<const OMX_U8*>(physAddr));
+    }else{
+        ALOGE("oh! board info no found, may be no rkxx or rkxx set error");
+    }
 
     err = OMX_UseBuffer(
             mHandle,

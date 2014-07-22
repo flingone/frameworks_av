@@ -110,7 +110,7 @@ private:
 
 
     String8 mParams;
-
+	void *m_handle;
     bool mIsMetaDataStoredInVideoBuffers;
     MediaProfiles *mEncoderProfiles;
 
@@ -135,6 +135,7 @@ private:
     status_t startRawAudioRecording();
     status_t startRTPRecording();
     status_t startMPEG2TSRecording();
+    status_t startMIRRORINGTSRecording();
     sp<MediaSource> createAudioSource();
     status_t checkVideoEncoderCapabilities();
     status_t checkAudioEncoderCapabilities();
@@ -143,6 +144,7 @@ private:
     // depending on the videosource type
     status_t setupMediaSource(sp<MediaSource> *mediaSource);
     status_t setupCameraSource(sp<CameraSource> *cameraSource);
+    status_t setupUISource( sp<MediaSource> *uiSource);	
     // setup the surfacemediasource for the encoder
     status_t setupSurfaceMediaSource();
 

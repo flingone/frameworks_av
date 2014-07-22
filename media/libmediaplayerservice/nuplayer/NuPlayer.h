@@ -56,6 +56,7 @@ struct NuPlayer : public AHandler {
     void seekToAsync(int64_t seekTimeUs);
 
     status_t setVideoScalingMode(int32_t mode);
+	//static int  Wifidisplay_get_TimeInfo(void *ptr,int64_t *start_time,int64_t *audio_start_time);
 
 protected:
     virtual ~NuPlayer();
@@ -107,6 +108,8 @@ private:
 
     bool mScanSourcesPending;
     int32_t mScanSourcesGeneration;
+	bool isUrl;
+	bool isBuffering;
 
     int32_t mPollDurationGeneration;
 
@@ -132,11 +135,16 @@ private:
     int64_t mSkipRenderingAudioUntilMediaTimeUs;
     int64_t mSkipRenderingVideoUntilMediaTimeUs;
 
+    int64_t mLastSeekTimeUs;
+    int64_t mLastSeekSysTimeUs;
     int64_t mVideoLateByUs;
     int64_t mNumFramesTotal, mNumFramesDropped;
 
     int32_t mVideoScalingMode;
-
+	int32_t	wifidisplay_flag;
+	int32_t	*wifidisplay_info;
+	int64_t start_time ;
+	int64_t audio_start_time;
     status_t instantiateDecoder(bool audio, sp<Decoder> *decoder);
 
     status_t feedDecoderInputData(bool audio, const sp<AMessage> &msg);
@@ -152,6 +160,11 @@ private:
 
     void finishReset();
     void postScanSources();
+    bool mSeeking;
+    bool mPauseFlag;
+    bool mAudioFlag;
+    bool mVideoFlag;
+    int32_t restTimeOut;
 
     void schedulePollDuration();
     void cancelPollDuration();

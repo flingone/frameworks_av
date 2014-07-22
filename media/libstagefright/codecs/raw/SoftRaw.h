@@ -50,7 +50,20 @@ private:
 
     int32_t mChannelCount;
     int32_t mSampleRate;
+	int64_t start_time ;
+	int64_t start_timeUs ;
+	int64_t wifi_start_time ;
+	int64_t wifi_audio_start_time;
+	int64_t last_timeUs;
+	int64_t frame_interval;
+	int32_t wifidisplay_flag;
+	int32_t wifidisplay_addr;
+	FILE *omx_rs_txt ;
+	void* widi_handle;
+	int (*mStreamSource)(void* ptr,int64_t *start_time,int64_t *audio_start_time);
 
+    int64_t mPreTimeUs;
+	int64_t last_adujst_time;
     void initPorts();
     status_t initDecoder();
 

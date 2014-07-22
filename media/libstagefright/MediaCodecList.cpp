@@ -24,6 +24,7 @@
 #include <media/stagefright/MediaErrors.h>
 #include <media/stagefright/OMXClient.h>
 #include <media/stagefright/OMXCodec.h>
+#include <media/stagefright/MediaDefs.h>
 #include <utils/threads.h>
 
 #include <libexpat/expat.h>
@@ -62,8 +63,32 @@ MediaCodecList::MediaCodecList()
 
         addMediaCodec(true /* encoder */, "AACEncoder", "audio/mp4a-latm");
 
-        addMediaCodec(
-                false /* encoder */, "OMX.google.raw.decoder", "audio/raw");
+        addMediaCodec(true /* encoder */, "AVCEncoder", "video/avc");
+        addMediaCodec(true /* encoder */, "OMX.rk.video_encoder.avc", "video/avc");
+
+        addMediaCodec(false /* encoder */, "OMX.google.raw.decoder", "audio/raw");
+
+        addMediaCodec(false/* encoder */, "OMX.google.mp3.decoder",MEDIA_MIMETYPE_AUDIO_MPEG);
+        addMediaCodec(false /* encoder */, "DTSDecoder", MEDIA_MIMETYPE_AUDIO_DTS);
+        addMediaCodec(false /* encoder */, "WMADecoder", MEDIA_MIMETYPE_AUDIO_WMA);
+        addMediaCodec(false /* encoder */, "WMAPRODecoder",MEDIA_MIMETYPE_AUDIO_WMAPRO);
+        addMediaCodec(false /* encoder */, "AC3Decoder", MEDIA_MIMETYPE_AUDIO_AC3);
+        addMediaCodec(false /* encoder */, "RADecoder", MEDIA_MIMETYPE_AUDIO_RA);
+        addMediaCodec(false /* encoder */, "FLACDecoder", MEDIA_MIMETYPE_AUDIO_FLAC);
+        addMediaCodec(false /* encoder */, "WAVDecoder", MEDIA_MIMETYPE_AUDIO_WAV);
+        addMediaCodec(false /* encoder */, "AVCDecoder", MEDIA_MIMETYPE_VIDEO_AVC); 
+		addMediaCodec(false /* encoder */, "AVCDecoder_FLASH", MEDIA_MIMETYPE_VIDEO_AVC);
+        addMediaCodec(false /* encoder */, "AACDecoder", MEDIA_MIMETYPE_AUDIO_AAC);
+        addMediaCodec(false /* encoder */, "AACDecoder_MIRRORING", MEDIA_MIMETYPE_AUDIO_AAC);
+        addMediaCodec(false /* encoder */, "RVDecoder", MEDIA_MIMETYPE_VIDEO_REALVIDEO);
+        addMediaCodec(false /* encoder */, "FLVDecoder", MEDIA_MIMETYPE_VIDEO_FLV);
+        addMediaCodec(false /* encoder */, "M2VDecoder", MEDIA_MIMETYPE_VIDEO_MPEG2);
+        addMediaCodec(false /* encoder */, "VC1Decoder", MEDIA_MIMETYPE_VIDEO_VC1);
+        addMediaCodec(false /* encoder */, "M4vH263Decoder",MEDIA_MIMETYPE_VIDEO_H263);
+        addMediaCodec(false /* encoder */, "M4vH263Decoder",MEDIA_MIMETYPE_VIDEO_MPEG4);
+        addMediaCodec(false /* encoder */, "M4vH263Decoder",MEDIA_MIMETYPE_VIDEO_MJPEG);
+        addMediaCodec(false /* encoder */, "VPXDecoder", MEDIA_MIMETYPE_VIDEO_VPX);
+        addMediaCodec(false /* encoder */, "VPXDecoder", MEDIA_MIMETYPE_VIDEO_VP6);
     }
 
 #if 0

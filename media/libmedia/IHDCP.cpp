@@ -31,6 +31,7 @@ enum {
     HDCP_INIT_ASYNC,
     HDCP_SHUTDOWN_ASYNC,
     HDCP_ENCRYPT,
+    HDCP_DECRYPT,
 };
 
 struct BpHDCPObserver : public BpInterface<IHDCPObserver> {
@@ -106,6 +107,25 @@ struct BpHDCP : public BpInterface<IHDCP> {
 
         return err;
     }
+
+	virtual status_t decrypt(
+       		const uint8_t *HDCP_private_data, size_t HDCP_private_data_len, const void *inData, size_t dataLen, void *outData) {
+		Parcel data, reply;
+        data.writeInterfaceToken(IHDCP::getInterfaceDescriptor());
+        data.writeInt32(HDCP_private_data_len);
+        data.write(HDCP_private_data, HDCP_private_data_len);
+        data.writeInt32(dataLen);
+        data.write(inData, dataLen);
+        remote()->transact(HDCP_DECRYPT, data, &reply);
+
+        status_t err = reply.readInt32();
+
+        if (err != OK) {
+            return err;
+        }
+        reply.read(outData, dataLen);
+        return err;
+	}
 };
 
 IMPLEMENT_META_INTERFACE(HDCP, "android.hardware.IHDCP");
@@ -193,6 +213,33 @@ status_t BnHDCP::onTransact(
             }
 
             free(inData);
+            inData = outData = NULL;
+
+            return OK;
+        }
+
+		case HDCP_DECRYPT:
+        {
+            size_t HDCP_private_data_len = data.readInt32();
+			uint8_t *HDCP_private_data = (uint8_t *)malloc(HDCP_private_data_len);
+			data.read(HDCP_private_data, HDCP_private_data_len);
+
+			size_t size = data.readInt32();
+            void *inData = malloc(2 * size);
+            void *outData = (uint8_t *)inData + size;
+
+            data.read(inData, size);
+            status_t err = decrypt(HDCP_private_data, HDCP_private_data_len, inData, size, outData);
+
+            reply->writeInt32(err);
+
+            if (err == OK) {
+                reply->write(outData, size);
+            }
+
+            free(HDCP_private_data);
+            free(inData);
+			HDCP_private_data = NULL;
             inData = outData = NULL;
 
             return OK;

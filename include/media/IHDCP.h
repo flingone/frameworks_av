@@ -57,6 +57,9 @@ struct IHDCP : public IInterface {
             const void *inData, size_t size, uint32_t streamCTR,
             uint64_t *outInputCTR, void *outData) = 0;
 
+	virtual status_t decrypt(
+       const uint8_t *HDCP_private_data, size_t HDCP_private_data_len, const void *inData, size_t dataLen, void *outData) = 0;
+
 private:
     DISALLOW_EVIL_CONSTRUCTORS(IHDCP);
 };

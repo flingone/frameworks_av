@@ -296,11 +296,11 @@ MP3Extractor::MP3Extractor(
 
     switch (layer) {
         case 1:
-            mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_I);
-            break;
+            //mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_I);
+            //break;
         case 2:
-            mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_II);
-            break;
+            //mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_II);
+            //break;
         case 3:
             mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG);
             break;
@@ -350,10 +350,8 @@ MP3Extractor::MP3Extractor(
 
     mInitCheck = OK;
 
-    // Get iTunes-style gapless info if present.
-    // When getting the id3 tag, skip the V1 tags to prevent the source cache
-    // from being iterated to the end of the file.
-    ID3 id3(mDataSource, true);
+    // get iTunes-style gapless info if present
+    ID3 id3(mDataSource);
     if (id3.isValid()) {
         ID3::Iterator *com = new ID3::Iterator(id3, "COM");
         if (com->done()) {
@@ -662,7 +660,7 @@ bool SniffMP3(
     (*meta)->setInt64("post-id3-offset", post_id3_pos);
 
     *mimeType = MEDIA_MIMETYPE_AUDIO_MPEG;
-    *confidence = 0.2f;
+    *confidence = MP3_CONTAINER_CONFIDENCE;
 
     return true;
 }

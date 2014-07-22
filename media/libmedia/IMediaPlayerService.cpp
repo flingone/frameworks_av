@@ -46,6 +46,7 @@ enum {
     ADD_BATTERY_DATA,
     PULL_BATTERY_DATA,
     LISTEN_FOR_REMOTE_DISPLAY,
+    MAKE_HDCP_SINK,
 };
 
 class BpMediaPlayerService: public BpInterface<IMediaPlayerService>
@@ -130,6 +131,13 @@ public:
         Parcel data, reply;
         data.writeInterfaceToken(IMediaPlayerService::getInterfaceDescriptor());
         remote()->transact(MAKE_HDCP, data, &reply);
+        return interface_cast<IHDCP>(reply.readStrongBinder());
+    }
+
+	virtual sp<IHDCP> makeHDCPSink() {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMediaPlayerService::getInterfaceDescriptor());
+        remote()->transact(MAKE_HDCP_SINK, data, &reply);
         return interface_cast<IHDCP>(reply.readStrongBinder());
     }
 
@@ -233,6 +241,12 @@ status_t BnMediaPlayerService::onTransact(
         case MAKE_HDCP: {
             CHECK_INTERFACE(IMediaPlayerService, data, reply);
             sp<IHDCP> hdcp = makeHDCP();
+            reply->writeStrongBinder(hdcp->asBinder());
+            return NO_ERROR;
+        } break;
+		case MAKE_HDCP_SINK: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            sp<IHDCP> hdcp = makeHDCPSink();
             reply->writeStrongBinder(hdcp->asBinder());
             return NO_ERROR;
         } break;

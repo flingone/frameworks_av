@@ -250,6 +250,7 @@ public:
     virtual sp<IOMX>            getOMX();
     virtual sp<ICrypto>         makeCrypto();
     virtual sp<IHDCP>           makeHDCP();
+    virtual sp<IHDCP>           makeHDCPSink();
 
     virtual sp<IRemoteDisplay> listenForRemoteDisplay(const sp<IRemoteDisplayClient>& client,
             const String8& iface);
@@ -428,6 +429,7 @@ private:
                 int32_t                     mNextConnId;
                 sp<IOMX>                    mOMX;
                 sp<ICrypto>                 mCrypto;
+				sp<IHDCP>					mHDCPSink;
 };
 
 // ----------------------------------------------------------------------------

@@ -369,9 +369,7 @@ pvmp3_merge_in_place_N32:
 
 pvmp3_split:
         stmfd    sp!,{r4,r5,lr}
-        adr      r1,constant16
-        ldr      r2,[r1]
-        add      r2,r1
+        ldr      r2,constant16
         sub      r1,r0,#4
         mov      r3,#3
 loop1:
@@ -451,7 +449,7 @@ constant14:
 constant15:
         .word      0x5a827980
 constant16:
-        .word      (CosTable_dct32 + 60)-constant16
+        .word      CosTable_dct32 + 60
 
 
 

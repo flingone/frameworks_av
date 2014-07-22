@@ -44,6 +44,7 @@
 #include <system/audio_policy.h>
 
 #include <audio_utils/primitives.h>
+#include <cutils/properties.h>
 
 namespace android {
 // ---------------------------------------------------------------------------
@@ -202,6 +203,7 @@ status_t AudioTrack::set(
 
     ALOGV("set() streamType %d frameCount %d flags %04x", streamType, frameCount, flags);
 
+    //ALOGI("set() streamType %d frameCount %d flags %04x channelMask %d sampleRate %d format %d", streamType, frameCount, flags, channelMask, sampleRate, format);
     AutoMutex lock(mLock);
     if (mAudioTrack != 0) {
         ALOGE("Track already in use");
@@ -256,8 +258,16 @@ status_t AudioTrack::set(
         ALOGE("Invalid channel mask %#x", channelMask);
         return BAD_VALUE;
     }
+    if( (AUDIO_OUTPUT_FLAG_DIRECT != flags) &&
+		(AUDIO_CHANNEL_OUT_5POINT1 == channelMask)) {
+        flags = AUDIO_OUTPUT_FLAG_DIRECT;
+    } else if( AUDIO_OUTPUT_FLAG_DIRECT == flags){
+        channelMask = AUDIO_CHANNEL_OUT_STEREO;
+    }
     uint32_t channelCount = popcount(channelMask);
 
+    //ALOGI("streamType %d sampleRate %d format %d channelMask %d flags %d", streamType,
+//		sampleRate,format,channelMask,flags);
     audio_io_handle_t output = AudioSystem::getOutput(
                                     streamType,
                                     sampleRate, format, channelMask,
@@ -267,6 +277,12 @@ status_t AudioTrack::set(
         ALOGE("Could not get audio output for stream type %d", streamType);
         return BAD_VALUE;
     }
+
+    if(2 != output)
+        property_set("media.cfg.audio.soundeffect", "false");
+    else
+        property_set("media.cfg.audio.soundeffect", "true");
+	
 
     mVolume[LEFT] = 1.0f;
     mVolume[RIGHT] = 1.0f;

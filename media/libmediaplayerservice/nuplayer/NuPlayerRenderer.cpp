@@ -28,7 +28,17 @@ namespace android {
 
 // static
 const int64_t NuPlayer::Renderer::kMinPositionUpdateDelayUs = 100000ll;
-
+extern FILE *omx_rs_txt;
+int video_num;
+int audio_num;
+int video_num1;
+int audio_num1;
+FILE* display_yuv;
+int64_t start_fill_timeus ;
+int64_t last_fill_timeus ;
+int post_num;
+FILE* yuv_data_render;
+int yuv_sign_render;
 NuPlayer::Renderer::Renderer(
         const sp<MediaPlayerBase::AudioSink> &sink,
         const sp<AMessage> &notify)
@@ -49,7 +59,20 @@ NuPlayer::Renderer::Renderer(
       mPaused(false),
       mVideoRenderingStarted(false),
       mLastPositionUpdateUs(-1ll),
-      mVideoLateByUs(0ll) {
+      mVideoLateByUs(0ll) ,
+      wifidisplay_flag(0){
+      audio_latency_time = 0;
+	video_num = audio_num = 0;
+	video_num1 = audio_num1 = 0;
+	display_yuv = NULL;
+	start_fill_timeus = 0;
+	post_num = 0;
+	yuv_data_render = NULL;
+ yuv_sign_render = 0;
+	sys_start_time = 0;
+	audio_start_timeUs = 0;
+	last_adujst_time = 0;
+	last_timeUs = 0;    
 }
 
 NuPlayer::Renderer::~Renderer() {
@@ -79,11 +102,15 @@ void NuPlayer::Renderer::flush(bool audio) {
     {
         Mutex::Autolock autoLock(mFlushLock);
         if (audio) {
-            CHECK(!mFlushingAudio);
+            if(!mFlushingAudio)
             mFlushingAudio = true;
+            else
+                return;
         } else {
-            CHECK(!mFlushingVideo);
+            if(!mFlushingVideo)
             mFlushingVideo = true;
+            else
+                return;
         }
     }
 
@@ -93,8 +120,12 @@ void NuPlayer::Renderer::flush(bool audio) {
 }
 
 void NuPlayer::Renderer::signalTimeDiscontinuity() {
-    CHECK(mAudioQueue.empty());
-    CHECK(mVideoQueue.empty());
+    if(!mAudioQueue.empty()){
+        mAudioQueue.clear();
+    }
+    if(!mVideoQueue.empty()){
+        mVideoQueue.clear();
+    }
     mAnchorTimeMediaUs = -1;
     mAnchorTimeRealUs = -1;
     mSyncQueues = mHasAudio && mHasVideo;
@@ -136,7 +167,10 @@ void NuPlayer::Renderer::onMessageReceived(const sp<AMessage> &msg) {
 
                 // Let's give it more data after about half that time
                 // has elapsed.
-                postDrainAudioQueue(delayUs / 2);
+                if(wifidisplay_flag)
+                postDrainAudioQueue(5000ll);//delayUs / 2);//);//delayUs / 2);
+                else
+					 postDrainAudioQueue(delayUs / 2);
             }
             break;
         }
@@ -217,6 +251,17 @@ void NuPlayer::Renderer::postDrainAudioQueue(int64_t delayUs) {
 void NuPlayer::Renderer::signalAudioSinkChanged() {
     (new AMessage(kWhatAudioSinkChanged, id()))->post();
 }
+int	NuPlayer::Renderer::Wifidisplay_set_TimeInfo(int64_t start_time,int64_t audio_start_time)
+{
+	if(start_time != 0 && audio_start_time != 0)
+	{
+		sys_start_time = start_time;
+		audio_start_timeUs = audio_start_time;
+		return 0;
+	}
+	return 1;
+	
+}
 
 bool NuPlayer::Renderer::onDrainAudioQueue() {
     uint32_t numFramesPlayed;
@@ -254,27 +299,151 @@ bool NuPlayer::Renderer::onDrainAudioQueue() {
 
         if (entry->mOffset == 0) {
             int64_t mediaTimeUs;
+			int64_t sys_time = systemTime(SYSTEM_TIME_MONOTONIC) / 1000;		
             CHECK(entry->mBuffer->meta()->findInt64("timeUs", &mediaTimeUs));
-
-            ALOGV("rendering audio at media time %.2f secs", mediaTimeUs / 1E6);
-
-            mAnchorTimeMediaUs = mediaTimeUs;
-
-            uint32_t numFramesPlayed;
+			uint32_t numFramesPlayed;
             CHECK_EQ(mAudioSink->getPosition(&numFramesPlayed), (status_t)OK);
 
             uint32_t numFramesPendingPlayout =
                 mNumFramesWritten - numFramesPlayed;
+			if(wifidisplay_flag)
+			{
+				int set_flag =0;
+				if(sys_start_time == 0)
+				{
+					sys_start_time =sys_time;		
+					ALOGD("sys_start_time == 0 %lld",sys_start_time);
+				}
+				if(audio_start_timeUs == 0)
+				{
+					audio_start_timeUs = mediaTimeUs;
+					ALOGD("audio_start_timeUs == 0 %lld",audio_start_timeUs);
+				}
+				if(last_adujst_time == 0)
+					last_adujst_time = sys_time;
+				int64_t pending_time =  numFramesPendingPlayout    * mAudioSink->msecsPerFrame() * 1000ll;
+				if(sys_start_time + (mediaTimeUs - audio_start_timeUs)  - pending_time < sys_time - 100000ll )
+				{	
+					if(last_timeUs < mediaTimeUs )//loop tntil the real mediaTimeUs catch up with the old setted one  , if there is no data,the old setted is also faster than the real mediaTimeUs.so it's okay
+					{
+						if(sys_start_time + (mediaTimeUs - audio_start_timeUs) - pending_time< sys_time - 300000ll || (sys_time - last_adujst_time > 20000000ll && 
+						sys_start_time + (mediaTimeUs - audio_start_timeUs) - pending_time< sys_time - 100000ll  ))//recalculate the mediaTimeUs.
+						{
+							int retrtptxt;
+							if((retrtptxt = access("data/test/omx_rs_txt_file",0)) == 0)
+							{
+								if(omx_rs_txt == NULL)
+						  			omx_rs_txt = fopen("data/test/omx_rs_txt.txt","ab");
+								if(omx_rs_txt != NULL)
+					
+								{
+									if(sys_time - last_adujst_time > 20000000ll && 
+							sys_start_time + (mediaTimeUs - audio_start_timeUs) - pending_time < sys_time - 100000ll    )
+									fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainAudioQueue adjust start   %lld  %lld sys %lld %lld mediaTimeUs %lld last %lld delta %lld  %lld %lld\n"
+									,sys_start_time,audio_start_timeUs,last_adujst_time,sys_time,mediaTimeUs,last_timeUs,sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs) + pending_time,
+									sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs),sys_time-last_adujst_time);
+									else
+									fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainAudioQueue before delay 300ms start   %lld  %lld sys %lld %lld mediaTimeUs %lld last %lld delta %lld  %lld %lld\n"
+									,sys_start_time,audio_start_timeUs,last_adujst_time,sys_time,mediaTimeUs,last_timeUs,sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs) + pending_time,
+									sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs),sys_time-last_adujst_time);
+									fflush(omx_rs_txt); 		
+													
+								}
+							}
+							mediaTimeUs +=((sys_time - sys_start_time - (mediaTimeUs - audio_start_timeUs) ) / 11) *11;					
+							set_flag = 1;
+							last_adujst_time = sys_time;
+						}
+						
+						else
+						{
+							int retrtptxt;
+							if((retrtptxt = access("data/test/omx_rs_txt_file",0)) == 0)
+							{
+								if(omx_rs_txt == NULL)
+						  			omx_rs_txt = fopen("data/test/omx_rs_txt.txt","ab");
+								if(omx_rs_txt != NULL)
+					
+								{
+								
+									fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainAudioQueue before dec delay 100-300 ms start   %lld  %lld sys %lld %lld mediaTimeUs %lld last %lld delta %lld  %lld %lld\n"
+									,sys_start_time,audio_start_timeUs,last_adujst_time,sys_time,mediaTimeUs,last_timeUs,sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs) + pending_time,
+									sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs),sys_time-last_adujst_time);
+									fflush(omx_rs_txt); 		
+													
+								}
+							}
+						}
+						
+					
+					}
+					else
+					{
+						int retrtptxt;
+						if((retrtptxt = access("data/test/omx_rs_txt_file",0)) == 0)
+						{
+							if(omx_rs_txt == NULL)
+					  			omx_rs_txt = fopen("data/test/omx_rs_txt.txt","ab");
+							if(omx_rs_txt != NULL)
+					
+							{
+							
+								fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainAudioQueue before drop start %lld    %lld sys %lld %lld mediaTimeUs %lld last %lld delta %lld   %lld %lld\n"
+									,sys_start_time,audio_start_timeUs,last_adujst_time,sys_time,mediaTimeUs,last_timeUs,sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs) + pending_time,
+									sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs),sys_time-last_adujst_time);
+								fflush(omx_rs_txt);			
+							}	
+						}
+						{
+							entry->mNotifyConsumed->post();
+							mAudioQueue.erase(mAudioQueue.begin());
+							entry = NULL;
+						}
+						continue;
+					}
+				}
+				else
+				{
+					int retrtptxt;
+					if((retrtptxt = access("data/test/omx_rs_txt_file",0)) == 0)
+					{
+						if(omx_rs_txt == NULL)
+				  			omx_rs_txt = fopen("data/test/omx_rs_txt.txt","ab");
+						if(omx_rs_txt != NULL)
+				
+						{
+						
+							fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainAudioQueue before less than 100ms start   %lld  %lld sys %lld %lld mediaTimeUs %lld last %lld delta %lld   %lld %lld\n"
+								,sys_start_time,audio_start_timeUs,last_adujst_time,sys_time,mediaTimeUs,last_timeUs,sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs) + pending_time,
+								sys_time-sys_start_time-(mediaTimeUs - audio_start_timeUs),sys_time-last_adujst_time);
+							fflush(omx_rs_txt);			
+											
+						}	
+					}
+				}  
+				last_timeUs = mediaTimeUs;
+	        	if(sys_time - last_adujst_time > 20000000ll)
+					last_adujst_time = sys_time;
+				if(set_flag)
+				memset(entry->mBuffer->data(),0,entry->mBuffer->size());
+			}
+            ALOGV("rendering audio at media time %.2f secs", mediaTimeUs / 1E6);
 
+            mAnchorTimeMediaUs = mediaTimeUs;
+
+            
             int64_t realTimeOffsetUs =
                 (mAudioSink->latency() / 2  /* XXX */
                     + numFramesPendingPlayout
                         * mAudioSink->msecsPerFrame()) * 1000ll;
 
             // ALOGI("realTimeOffsetUs = %lld us", realTimeOffsetUs);
-
+			
             mAnchorTimeRealUs =
                 ALooper::GetNowUs() + realTimeOffsetUs;
+			if(wifidisplay_flag == 1)
+				audio_latency_time = realTimeOffsetUs;
+			
         }
 
         size_t copy = entry->mBuffer->size() - entry->mOffset;
@@ -341,8 +510,22 @@ void NuPlayer::Renderer::postDrainVideoQueue() {
             delayUs = realTimeUs - ALooper::GetNowUs();
         }
     }
-
-    msg->post(delayUs);
+	if(wifidisplay_flag)
+	{
+		if(delayUs  > 80000){
+		//delayUs = 35000;
+	    }
+			onDrainVideoQueue();
+	    msg->post(1000);//delayUs);
+	}
+	else
+	{
+		if(delayUs > 80000){
+			delayUs = 35000;
+		}
+		msg->post(delayUs);
+		
+	}
 
     mDrainVideoQueuePending = true;
 }
@@ -375,14 +558,65 @@ void NuPlayer::Renderer::onDrainVideoQueue() {
     mVideoLateByUs = ALooper::GetNowUs() - realTimeUs;
 
     bool tooLate = (mVideoLateByUs > 40000);
+    if(mVideoLateByUs + (audio_latency_time - 120000) < -50000&& wifidisplay_flag == 1){
+	    ALOGV("video is early");
+	    return; 
+    }
+	if(mVideoLateByUs  < -50000 && wifidisplay_flag == 0){
+	    ALOGV("video is early");
+		return;
+    }
+	if(wifidisplay_flag==1)
+	{
+	  int retrtptxt;
+	  int64_t sys_time;
+	  static int64_t last_time_us = 0;
+	  static int64_t last_sys_time = 0;
+	  sys_time = systemTime(SYSTEM_TIME_MONOTONIC) / 1000;		
 
+      if(sys_start_time == 0)
+      {
+      	sys_start_time =sys_time;		
+      	ALOGD("sys_start_time == 0 %lld",sys_start_time);
+      }
+      if(audio_start_timeUs == 0)
+      {
+      	audio_start_timeUs = mediaTimeUs;
+      	ALOGD("audio_start_timeUs == 0 %lld",audio_start_timeUs);
+      }
+	 
+	  if((retrtptxt = access("data/test/omx_rs_txt_file",0)) == 0)//test_file!=NULL)
+	  {
+		  
+		  if(omx_rs_txt == NULL)
+			  omx_rs_txt = fopen("data/test/omx_rs_txt.txt","ab");
+		  if(omx_rs_txt != NULL)
+		  {
+		  	
+		fprintf(omx_rs_txt,"NuPlayer::Renderer::onDrainVideoQueue Video sys1 time %lld start %lld  %lld timeus %lld delta %lld  %lld %lld mAnchorTimeMediaUs %lld mAnchorTimeRealUs %lld mVideoLateByUs %lld audio_pending_time %lld mVideoQueue size %d  tooLate %d\n",
+			sys_time,sys_start_time,audio_start_timeUs,mediaTimeUs,sys_time - sys_start_time - (mediaTimeUs - audio_start_timeUs),
+			sys_time - last_sys_time,mediaTimeUs -  last_time_us,mAnchorTimeMediaUs,mAnchorTimeRealUs,mVideoLateByUs,
+			audio_latency_time,mVideoQueue.size(),tooLate);
+		fflush(omx_rs_txt);
+		  }
+	  }
+	  static int video_render_time = 0;
+
+	  video_render_time++;
+	  last_time_us = mediaTimeUs;
+	  last_sys_time = sys_time;
+	}
+	
     if (tooLate) {
         ALOGV("video late by %lld us (%.2f secs)",
              mVideoLateByUs, mVideoLateByUs / 1E6);
     } else {
         ALOGV("rendering video at media time %.2f secs", mediaTimeUs / 1E6);
     }
+	if(wifidisplay_flag)
+		entry->mNotifyConsumed->setInt32("render", 1);
 
+	else
     entry->mNotifyConsumed->setInt32("render", !tooLate);
     entry->mNotifyConsumed->post();
     mVideoQueue.erase(mVideoQueue.begin());
@@ -408,6 +642,91 @@ void NuPlayer::Renderer::notifyEOS(bool audio, status_t finalResult) {
     notify->setInt32("audio", static_cast<int32_t>(audio));
     notify->setInt32("finalResult", finalResult);
     notify->post();
+}
+void NuPlayer::Renderer::rendervideobuffer(
+        bool audio,
+        const sp<ABuffer> &buffer,
+        const sp<AMessage> &notifyConsumed) {
+
+	if (audio) {
+        mHasAudio = true;
+    } else {
+        mHasVideo = true;
+    }
+	{
+		bool flushing = false;
+
+	    {
+	        Mutex::Autolock autoLock(mFlushLock);
+	        if (audio) {
+	            flushing = mFlushingAudio;
+	        } else {
+	            flushing = mFlushingVideo;
+	        }
+	    }
+
+	    if (flushing) {
+		notifyConsumed->post();
+
+        return;
+			}
+	}
+	
+
+
+    QueueEntry entry;
+    entry.mBuffer = buffer;
+    entry.mNotifyConsumed = notifyConsumed;
+    entry.mOffset = 0;
+    entry.mFinalResult = OK;
+
+
+	
+	if (audio) {
+		   mAudioQueue.push_back(entry);
+		   ALOGV("onQueueBuffer postDrainAudioQueue");
+		   postDrainAudioQueue();
+	} else {
+		   mVideoQueue.push_back(entry);
+		   postDrainVideoQueue();
+		//   onDrainVideoQueue();
+	
+		   
+	}
+	if (!mSyncQueues || mAudioQueue.empty() || mVideoQueue.empty()) {
+        return;
+    }
+
+    sp<ABuffer> firstAudioBuffer = (*mAudioQueue.begin()).mBuffer;
+    sp<ABuffer> firstVideoBuffer = (*mVideoQueue.begin()).mBuffer;
+
+    if (firstAudioBuffer == NULL || firstVideoBuffer == NULL) {
+        // EOS signalled on either queue.
+        syncQueuesDone();
+        return;
+    }
+
+    int64_t firstAudioTimeUs;
+    int64_t firstVideoTimeUs;
+    CHECK(firstAudioBuffer->meta()
+            ->findInt64("timeUs", &firstAudioTimeUs));
+    CHECK(firstVideoBuffer->meta()
+            ->findInt64("timeUs", &firstVideoTimeUs));
+
+    int64_t diff = firstVideoTimeUs - firstAudioTimeUs;
+
+    ALOGV("queueDiff = %.2f secs", diff / 1E6);
+
+    if (diff > 100000ll) {
+        // Audio data starts More than 0.1 secs before video.
+        // Drop some audio.
+
+        (*mAudioQueue.begin()).mNotifyConsumed->post();
+        mAudioQueue.erase(mAudioQueue.begin());
+        return;
+    }
+
+    syncQueuesDone();
 }
 
 void NuPlayer::Renderer::onQueueBuffer(const sp<AMessage> &msg) {
@@ -632,8 +951,10 @@ void NuPlayer::Renderer::notifyPosition() {
 }
 
 void NuPlayer::Renderer::onPause() {
-    CHECK(!mPaused);
-
+    if(mPaused)
+    {
+        return;
+    }
     mDrainAudioQueuePending = false;
     ++mAudioQueueGeneration;
 

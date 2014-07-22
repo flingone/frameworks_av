@@ -52,6 +52,7 @@ struct LiveSession : public AHandler {
 
     bool isSeekable() const;
     bool hasDynamicDuration() const;
+	status_t getCurrentTime(int64_t *CurrenttimeUs);
 
 protected:
     virtual ~LiveSession();
@@ -60,8 +61,8 @@ protected:
 
 private:
     enum {
-        kMaxNumQueuedFragments = 3,
-        kMaxNumRetries         = 5,
+        kMaxNumQueuedFragments = 6,
+        kMaxNumRetries         = 25,
     };
 
     enum {
@@ -104,6 +105,9 @@ private:
     int64_t mDurationUs;
     bool mDurationFixed;  // Duration has been determined once and for all.
     bool mSeekDone;
+	int64_t mCurrenttimeUs;
+    bool mSeekFlag;
+    bool mNeedDecrypt;
     bool mDisconnectPending;
 
     int32_t mMonitorQueueGeneration;
@@ -140,10 +144,7 @@ private:
 
     static int SortByBandwidth(const BandwidthItem *, const BandwidthItem *);
 
-    // Returns the media time in us of the segment specified by seqNumber.
-    // This is computed by summing the durations of all segments before it.
     int64_t getSegmentStartTimeUs(int32_t seqNumber) const;
-
     DISALLOW_EVIL_CONSTRUCTORS(LiveSession);
 };
 

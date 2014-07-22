@@ -17,6 +17,10 @@
 //#define LOG_NDEBUG 0
 #define LOG_TAG "CameraSource"
 #include <utils/Log.h>
+#if HAVE_ANDROID_OS
+#include <linux/android_pmem.h>
+#endif
+#include <sys/ioctl.h>
 
 #include <OMX_Component.h>
 #include <binder/IPCThreadState.h>
@@ -790,10 +794,23 @@ status_t CameraSource::read(
 
         frameTime = *mFrameTimes.begin();
         mFrameTimes.erase(mFrameTimes.begin());
+        /*
+         ** camera will send FramePhyaddress directly, @Nov 30th, 2011. by hbb.
+         */
+        /*ssize_t offset = 0;
+        sp<IMemoryHeap> hp = frame->getMemory(&offset);
+        int iPmemFd = hp->getHeapID();
+        struct pmem_region sub;
+        ioctl(iPmemFd,PMEM_GET_PHYS, &sub);
+        uint32_t HeapPhyBase = sub.offset;
+        uint32_t FramePhyaddress = HeapPhyBase + offset;*/
+
+        uint32_t FramePhyaddress = *((int*)frame->pointer());
         mFramesBeingEncoded.push_back(frame);
         *buffer = new MediaBuffer(frame->pointer(), frame->size());
         (*buffer)->setObserver(this);
         (*buffer)->add_ref();
+        (*buffer)->meta_data()->setInt32(kKeyBusAdds, FramePhyaddress);
         (*buffer)->meta_data()->setInt64(kKeyTime, frameTime);
     }
     return OK;
