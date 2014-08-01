@@ -1313,6 +1313,17 @@ status_t OMXCodec::setVideoOutputFormat(
 
     CODEC_LOGV("setVideoOutputFormat width=%ld, height=%ld", width, height);
 
+    // set video_state for 1080p video play
+    if ((width * height) > (1280 * 720)) {
+        CODEC_LOGI(" %d x %d set video_state", width, height);
+        int32_t fd = open("/dev/video_state", O_RDWR);
+        if (fd >= 0) {
+            write(fd, "1", 1);
+            close(fd);
+        }
+    } else
+        CODEC_LOGI(" %d x %d not set video_state", width, height);
+
     OMX_VIDEO_CODINGTYPE compressionFormat = OMX_VIDEO_CodingUnused;
     if (!strcasecmp(MEDIA_MIMETYPE_VIDEO_AVC, mime)) {
         compressionFormat = OMX_VIDEO_CodingAVC;
@@ -1570,6 +1581,30 @@ void OMXCodec::setComponentRole() {
 }
 
 OMXCodec::~OMXCodec() {
+    // clear video_state for 1080p video play
+    if (mIsVideo) {
+        int32_t width, height;
+
+        uint32_t type;
+        const void *data;
+        size_t size;
+
+        mOutputFormat->findData(kKeyHeight, &type, &data, &size);
+        height = *(int32_t *)data;
+        mOutputFormat->findData(kKeyWidth, &type, &data, &size);
+        width  = *(int32_t *)data;
+
+        if ((width * height) > (1280 * 720)) {
+            CODEC_LOGI(" %d x %d clear video_state", width, height);
+            int32_t fd = open("/dev/video_state", O_RDWR);
+            if (fd >= 0) {
+                write(fd, "0", 1);
+                close(fd);
+            }
+        } else
+            CODEC_LOGI(" %d x %d not clear video_state", width, height);
+    }
+
     mSource.clear();
 
     CHECK(mState == LOADED || mState == ERROR || mState == LOADED_TO_IDLE);
