@@ -74,6 +74,7 @@ LOCAL_SRC_FILES:=                         \
         ApeGetFileInfo.cpp                \
 	    Audio_Mirror_Source.cpp           \
 	    Video_Mirror_Source.cpp           \
+        mov/MOVExtractor.cpp              \
         MPEG4Extractor.cpp                \
 
 LOCAL_C_INCLUDES:= \
@@ -144,7 +145,6 @@ LOCAL_LDFLAGS :=  \
 	$(LOCAL_PATH)/matroska/libstagefright_matroska.a \
 	$(LOCAL_PATH)/mpeg2ts/libstagefright_mpeg2ts.a \
 	$(LOCAL_PATH)/httplive/libstagefright_httplive.a \
-    $(LOCAL_PATH)/cmov/libstagefright_cmov.a \
 	$(LOCAL_PATH)/ffmpg/libstagefright_ffmpg.a \
 	$(LOCAL_PATH)/libstagefright_framemanage.a \
 	$(LOCAL_PATH)/wimoVer1/libstagefright_wimover1.a \

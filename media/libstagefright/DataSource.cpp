@@ -32,6 +32,7 @@
 #include "include/FLACExtractor.h"
 #include "include/AACExtractor.h"
 #include "include/WVMExtractor.h"
+#include "mov/MOVExtractor.h"
 
 #include "matroska/MatroskaExtractor.h"
 #include "include/ExtendedExtractor.h"
@@ -266,6 +267,7 @@ void DataSource::RegisterDefaultSniffers() {
     RegisterSniffer(SniffWAV);
     ExtendedExtractor::RegisterSniffers();
     RegisterSniffer(SniffWVM);
+    RegisterSniffer(SniffMOV);
 
     char value[PROPERTY_VALUE_MAX];
     if (property_get("drm.service.enabled", value, NULL)

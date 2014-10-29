@@ -20,6 +20,7 @@ namespace android {
 
 const char *MEDIA_MIMETYPE_IMAGE_JPEG = "image/jpeg";
 
+const char *MEDIA_MIMETYPE_VIDEO_SVQ3 = "video/svq3";
 const char *MEDIA_MIMETYPE_VIDEO_VPX = "video/x-vnd.on2.vp8";
 const char *MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";
 const char *MEDIA_MIMETYPE_VIDEO_MPEG4 = "video/mp4v-es";
@@ -51,8 +52,11 @@ const char *MEDIA_MIMETYPE_AUDIO_G711_ALAW = "audio/g711-alaw";
 const char *MEDIA_MIMETYPE_AUDIO_G711_MLAW = "audio/g711-mlaw";
 const char *MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char *MEDIA_MIMETYPE_AUDIO_FLAC = "audio/flac";
+const char *MEDIA_MIMETYPE_AUDIO_WMAV2 = "audio/wmav2";
 const char *MEDIA_MIMETYPE_AUDIO_AAC_ADTS = "audio/aac-adts";
-
+const char *MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/e-ac-3";
+const char *MEDIA_MIMETYPE_AUDIO_MSGSM = "audio/gsm";
+const char *MEDIA_MIMETYPE_AUDIO_ADPCM_SWF= "audio/adpcm-swf";
 const char *MEDIA_MIMETYPE_CONTAINER_MPEG4 = "video/mp4";
 const char *MEDIA_MIMETYPE_CONTAINER_MOV = "video/mov";
 const char *MEDIA_MIMETYPE_CONTAINER_WAV = "audio/x-wav";
@@ -62,6 +66,8 @@ const char *MEDIA_MIMETYPE_CONTAINER_MATROSKA = "video/x-matroska";
 const char *MEDIA_MIMETYPE_CONTAINER_WMV = "video/wmv";
 const char *MEDIA_MIMETYPE_CONTAINER_MPG = "video/mpg";
 const char *MEDIA_MIMETYPE_CONTAINER_MPEG2TS = "video/mp2ts";
+
+const char *MEDIA_MIMETYPE_CONTAINER_MPEG2PS = "video/mp2p";
 const char *MEDIA_MIMETYPE_CONTAINER_REALVIDEO =  "video/rmvb";
 const char *MEDIA_MIMETYPE_CONTAINER_ADIF =  "X-AAC-ADIF" ;//.aac file format
 const char *MEDIA_MIMETYPE_CONTAINER_ADTS =  "X-AAC-ADTS" ;//.aac file format
@@ -70,10 +76,22 @@ const char *MEDIA_MIMETYPE_CONTAINER_WVM = "video/wvm";
 const char *MEDIA_MIMETYPE_CONTAINER_FLV = "video/flv";
 const char *MEDIA_MIMETYPE_CONTAINER_AVI = "video/avi";
 const char *MEDIA_MIMETYPE_CONTAINER_WIMO_VER1 = "video/wimo-ver1";
+const char *MEDIA_MIMETYPE_VIDEO_SH263 = "video/flv-sh263"; //Sorenson H263 in flv
 const char *MEDIA_MIMETYPE_TEXT_3GPP = "text/3gpp-tt";
 const char *MEDIA_MIMETYPE_TEXT_SUBRIP = "application/x-subrip";
 const char *MEDIA_MIMETYPE_TEXT_MATROSKA_UTF8 = "text/matroska-tt-utf8";
 const char *MEDIA_MIMETYPE_TEXT_MATROSKA_SSA = "text/matroska-tt-ssa";
 const char *MEDIA_MIMETYPE_TEXT_MATROSKA_VOBSUB = "text/matroska-tt-vobsub";
 
+const char *MEDIA_MIMETYPE_VIDEO_RV30 = "video/rv30";
+const char *MEDIA_MIMETYPE_VIDEO_RV40 = "video/rv40";
+const char *MEDIA_MIMETYPE_VIDEO_WMV1 = "video/wmv1";
+const char *MEDIA_MIMETYPE_VIDEO_WMV2 = "video/wmv2";
+const char *MEDIA_MIMETYPE_VIDEO_WMV3 = "video/wmv3";
+const char *MEDIA_MIMETYPE_VIDEO_WVC1 = "video/vc1";//only for VC1 AP, VC1 SP&MP use WMV3
+
+const char *MEDIA_MIMETYPE_CONTAINER_HLS = "video/x-hls";
+const char *MEDIA_MIMETYPE_CONTAINER_ASF = "video/x-ms-asf";
+const char *MEDIA_MIMETYPE_CONTAINER_RMVB = "video/x-pn-realvideo";
+const char *MEDIA_MIMETYPE_AUDIO_APE = "audio/ape";
 }  // namespace android
