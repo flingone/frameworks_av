@@ -35,6 +35,8 @@ enum {
     kKeyHeight            = 'heig',  // int32_t, image pixel
     kKeyDisplayWidth      = 'dWid',  // int32_t, display/presentation
     kKeyDisplayHeight     = 'dHgt',  // int32_t, display/presentation
+    kKeySARWidth          = 'sarW',  // int32_t, sampleAspectRatio width
+    kKeySARHeight         = 'sarH',  // int32_t, sampleAspectRatio height
 
     // a rectangle, if absent assumed to be (0, 0, width - 1, height - 1)
     kKeyCropRect          = 'crop',
@@ -95,6 +97,7 @@ enum {
     kKeyIsDRM             = 'idrm',  // int32_t (bool)
     kKeyEncoderDelay      = 'encd',  // int32_t (frames)
     kKeyEncoderPadding    = 'encp',  // int32_t (frames)
+    kKeyMediaCodecRender  = 'mrnd',
 
     kKeyAlbum             = 'albu',  // cstring
     kKeyArtist            = 'arti',  // cstring
@@ -131,6 +134,7 @@ enum {
     // kKeyTrackTimeStatus is used to track progress in elapsed time
     kKeyTrackTimeStatus   = 'tktm',  // int64_t
 
+    kKeyRealTimeRecording = 'rtrc',  // bool (int32_t)
     kKeyNotRealTime       = 'ntrt',  // bool (int32_t)
     kKeyNumBuffers        = 'nbbf',  // int32_t
 
@@ -148,14 +152,16 @@ enum {
     // The language code for this media
     kKeyMediaLanguage     = 'lang',  // cstring
 	kKeyVpuMem      = 'vpua',  // bool (int32_t)
-
+    kKeyTvFlag      = 'wtvf', // bool (int32_t)
     // To store the timed text format data
     kKeyTextFormatData    = 'text',  // raw data
 
     kKeyIsHttp         = 'ihtp',  // int32_t
+    kKeyIsDeInterlace         = 'fild',  // int32_t
     kKeyRequiresSecureBuffers = 'secu',  // bool (int32_t)
 
     kKeyIsADTS            = 'adts',  // bool (int32_t)
+    kKeyIsLATM			= 'latm',  //bool(int32_t)
 	
 	kKeyAudioType = 'audt', // cstring
 
@@ -182,6 +188,15 @@ enum {
     kKeyCryptoKey         = 'cryK',  // uint8_t[16]
     kKeyCryptoIV          = 'cryI',  // uint8_t[16]
     kKeyCryptoMode        = 'cryM',  // int32_t
+
+    kKeyCryptoDefaultIVSize = 'cryS',  // int32_t
+
+    kKeyPssh              = 'pssh',  // raw data
+    kKeyBitsPerSample    = 'bpsa',
+	kKeyRawCodecSpecificData = 'rcsd',
+	kFfmpegCodecSpecificData ='extrd',
+    kKeyMpeg4GMCWrapPoint = 'gmcw', //mpeg4 gmc wrap point
+    kKey263AdvancedFeatures = '263A', // Indicate H.263 has advanced features.
 };
 
 enum {
