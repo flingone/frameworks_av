@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (c) 2012, Marvell International Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef MPEG4_EXTRACTOR_H_
+#ifndef MOV_EXTRACTOR_H_
+#define MOV_EXTRACTOR_H_
 
-#define MPEG4_EXTRACTOR_H_
-
-#include <arpa/inet.h>
-
-#include <media/stagefright/DataSource.h>
+#include <media/stagefright/foundation/ABuffer.h>
 #include <media/stagefright/MediaExtractor.h>
-#include <media/stagefright/Utils.h>
-#include <utils/List.h>
 #include <utils/Vector.h>
 #include <utils/String8.h>
 
@@ -34,36 +29,24 @@ class DataSource;
 class SampleTable;
 class String8;
 
-struct SidxEntry {
-    size_t mSize;
-    uint32_t mDurationUs;
-};
-
-class MPEG4Extractor : public MediaExtractor {
+class MOVExtractor : public MediaExtractor {
 public:
     // Extractor assumes ownership of "source".
-    MPEG4Extractor(const sp<DataSource> &source);
+    MOVExtractor(const sp<DataSource> &source);
 
     virtual size_t countTracks();
     virtual sp<MediaSource> getTrack(size_t index);
     virtual sp<MetaData> getTrackMetaData(size_t index, uint32_t flags);
 
     virtual sp<MetaData> getMetaData();
-    virtual uint32_t flags() const;
 
     // for DRM
     virtual char* getDrmTrackInfo(size_t trackID, int *len);
 
 protected:
-    virtual ~MPEG4Extractor();
+    virtual ~MOVExtractor();
 
 private:
-
-    struct PsshInfo {
-        uint8_t uuid[16];
-        uint32_t datalen;
-        uint8_t *data;
-    };
     struct Track {
         Track *next;
         sp<MetaData> meta;
@@ -73,15 +56,11 @@ private:
         bool skipTrack;
     };
 
-    Vector<SidxEntry> mSidxEntries;
-    uint64_t mSidxDuration;
-    off64_t mMoofOffset;
-
-    Vector<PsshInfo> mPssh;
-
+    sp<ABuffer> mGlobalHeader;
     sp<DataSource> mDataSource;
     status_t mInitCheck;
     bool mHasVideo;
+    bool mIsLittleEndian;
 
     Track *mFirstTrack, *mLastTrack;
 
@@ -100,7 +79,7 @@ private:
     status_t updateAudioTrackInfoFromESDS_MPEG4Audio(
             const void *esds_data, size_t esds_size);
 
-    static status_t verifyTrack(Track *track);
+    status_t verifyTrack(Track *track);
 
     struct SINF {
         SINF *next;
@@ -117,18 +96,16 @@ private:
 
     status_t parseTrackHeader(off64_t data_offset, off64_t data_size);
 
-    status_t parseSegmentIndex(off64_t data_offset, size_t data_size);
-
     Track *findTrackByMimePrefix(const char *mimePrefix);
 
-    MPEG4Extractor(const MPEG4Extractor &);
-    MPEG4Extractor &operator=(const MPEG4Extractor &);
+    MOVExtractor(const MOVExtractor &);
+    MOVExtractor &operator=(const MOVExtractor &);
 };
 
-bool SniffMPEG4(
+bool SniffMOV(
         const sp<DataSource> &source, String8 *mimeType, float *confidence,
         sp<AMessage> *);
 
 }  // namespace android
 
-#endif  // MPEG4_EXTRACTOR_H_
+#endif  // MOV_EXTRACTOR_H_

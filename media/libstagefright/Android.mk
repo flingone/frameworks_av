@@ -52,6 +52,8 @@ LOCAL_SRC_FILES:=                         \
         OMXClient.cpp                     \
         OMXCodec.cpp                      \
         OggExtractor.cpp                  \
+        SampleIterator.cpp                \
+        SampleTable.cpp                   \
         SkipCutBuffer.cpp                 \
         StagefrightMediaScanner.cpp       \
         StagefrightMetadataRetriever.cpp  \
@@ -67,11 +69,13 @@ LOCAL_SRC_FILES:=                         \
         avc_utils.cpp                     \
         mp4/FragmentedMP4Parser.cpp       \
         mp4/TrackFragment.cpp             \
-	get_ape_id3.cpp                   \
+	    get_ape_id3.cpp                   \
         get_flac_id3.cpp                  \
         ApeGetFileInfo.cpp                \
-	Audio_Mirror_Source.cpp		  \
-	Video_Mirror_Source.cpp		  
+	    Audio_Mirror_Source.cpp           \
+	    Video_Mirror_Source.cpp           \
+        mov/MOVExtractor.cpp              \
+        MPEG4Extractor.cpp                \
 
 LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/include/media/stagefright/timedtext \
@@ -80,7 +84,7 @@ LOCAL_C_INCLUDES:= \
         $(TOP)/external/expat/lib \
         $(TOP)/external/flac/include \
         $(TOP)/external/tremolo \
-	$(TOP)/frameworks/av/include/media/stagefright \
+	    $(TOP)/frameworks/av/include/media/stagefright \
         $(TOP)/frameworks/av/media/libstagefright/rtsp \
         $(TOP)/frameworks/av/media/libstagefright/include \
         $(TOP)/frameworks/av/media/libstagefright/libvpu/common/include \
@@ -88,7 +92,7 @@ LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/media/libstagefright/ffmpg/include \
         $(TOP)/external/openssl/include \
         $(TOP)/hardware/rk29/libyuvtorgb \
-	$(TOP)/frameworks/av/media/libstagefright/libvpu/common/include
+	    $(TOP)/frameworks/av/media/libstagefright/libvpu/common/include
 
 LOCAL_SHARED_LIBRARIES := \
         libbinder \
@@ -141,10 +145,8 @@ LOCAL_LDFLAGS :=  \
 	$(LOCAL_PATH)/matroska/libstagefright_matroska.a \
 	$(LOCAL_PATH)/mpeg2ts/libstagefright_mpeg2ts.a \
 	$(LOCAL_PATH)/httplive/libstagefright_httplive.a \
-        $(LOCAL_PATH)/cmov/libstagefright_cmov.a \
 	$(LOCAL_PATH)/ffmpg/libstagefright_ffmpg.a \
 	$(LOCAL_PATH)/libstagefright_framemanage.a \
-	$(LOCAL_PATH)/mpeg4/libstagefright_mp4.a \
 	$(LOCAL_PATH)/wimoVer1/libstagefright_wimover1.a \
 	$(LOCAL_PATH)/mirroring/libstagefright_mirroring.a \
 	$(LOCAL_PATH)/tvpad_decoder/libtvpad_decoder.a \

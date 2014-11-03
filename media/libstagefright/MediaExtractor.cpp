@@ -37,7 +37,7 @@
 #include <media/stagefright/MediaExtractor.h>
 #include <media/stagefright/MetaData.h>
 #include <utils/String8.h>
-#include "cmov/CmovExtractor.h"
+#include "mov/MOVExtractor.h"
 
 #include <cutils/properties.h>
 
@@ -120,7 +120,7 @@ sp<MediaExtractor> MediaExtractor::Create(
             }
         }else if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MOV)) {
             if (strstr(value, "Mov")) {
-                ret = new CmovExtractor(source);
+                ret = new MOVExtractor(source);
             }
         }
         else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG)
@@ -173,7 +173,7 @@ sp<MediaExtractor> MediaExtractor::Create(
                 || (isDrm && (strstr(mime, "video/3gpp")))) {
             ret = new MPEG4Extractor(source);
         }else if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MOV)) {
-            ret = new CmovExtractor(source);
+            ret = new MOVExtractor(source);
         } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG)
                 || (isDrm && (strstr(mime, "audio/mp3")))) {
             ret = new MP3Extractor(source, meta);
@@ -289,7 +289,7 @@ sp<MediaExtractor> MediaExtractor::Create(
             }
         }else if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MOV)) {
             if (strstr(value, "Mov")) {
-                ret = new CmovExtractor(source);
+                ret = new MOVExtractor(source);
             }
         } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG)
                 || (isDrm && (strstr(mime, "audio/mp3")))) {
@@ -348,7 +348,7 @@ sp<MediaExtractor> MediaExtractor::Create(
                 || (isDrm && (strstr(mime, "video/3gpp")))) {
             ret = new MPEG4Extractor(source);
         }else if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MOV)) {
-            ret = new CmovExtractor(source);
+            ret = new MOVExtractor(source);
         } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG)
                 || (isDrm && (strstr(mime, "audio/mp3")))) {
             ret = new MP3Extractor(source, meta);

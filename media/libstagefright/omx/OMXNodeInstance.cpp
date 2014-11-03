@@ -706,6 +706,8 @@ void OMXNodeInstance::onMessage(const omx_message &msg) {
 void OMXNodeInstance::onObserverDied(OMXMaster *master) {
     ALOGE("!!! Observer died. Quickly, do something, ... anything...");
 
+    ALOGE("OMXNodeInstance::onObserverDied, quit myself...");
+    raise(SIGKILL);
     // Try to force shutdown of the node and hope for the best.
     freeNode(master);
 }
