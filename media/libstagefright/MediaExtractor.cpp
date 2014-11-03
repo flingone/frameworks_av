@@ -62,21 +62,21 @@ sp<MediaExtractor> MediaExtractor::Create(
     if (mime == NULL) {
         float confidence;
         if (!source->sniff(&tmp, &confidence, &meta)) {
-            ALOGV("FAILED to autodetect media content.");
+            ALOGE("FAILED to autodetect media content.");
 
             return NULL;
         }
 
         mime = tmp.string();
-        ALOGV("Autodetected media content as '%s' with confidence %.2f",
+        ALOGE("Autodetected media content as '%s' with confidence %.2f",
              mime, confidence);
     } else {
         tmp = mime;
         if (!source->sniff(&tmp, &confidence, &meta)) {
-            ALOGV("FAILED to autodetect media content.");
+            ALOGE("FAILED to autodetect media content.");
             return NULL;
         }
-        ALOGV("Autodetected media content as '%s' with confidence %.2f",
+        ALOGE("Autodetected media content as '%s' with confidence %.2f",
         mime, confidence);
         mime = tmp.string();
     }
@@ -231,21 +231,21 @@ sp<MediaExtractor> MediaExtractor::Create(
     if (mime == NULL) {
         float confidence;
         if (!source->sniff(&tmp, &confidence, &meta)) {
-            ALOGV("FAILED to autodetect media content.");
+            ALOGE("FAILED to autodetect media content.");
 
             return NULL;
         }
 
         mime = tmp.string();
-        ALOGV("Autodetected media content as '%s' with confidence %.2f",
+        ALOGE("Autodetected media content as '%s' with confidence %.2f",
              mime, confidence);
     } else {
 	     tmp = mime;
 	        if (!source->sniff(&tmp, &confidence, &meta)) {
-	            ALOGV("FAILED to autodetect media content.");
+	            ALOGE("FAILED to autodetect media content.");
 	            return NULL;
 	        }
-	        ALOGV("Autodetected media content as '%s' with confidence %.2f",
+	        ALOGE("Autodetected media content as '%s' with confidence %.2f",
 	             mime, confidence);
 		 mime = tmp.string();
     }

@@ -76,6 +76,7 @@ LOCAL_SRC_FILES:=                         \
 	    Video_Mirror_Source.cpp           \
         mov/MOVExtractor.cpp              \
         MPEG4Extractor.cpp                \
+		FakeExtractor.cpp                 \
 
 LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/include/media/stagefright/timedtext \
